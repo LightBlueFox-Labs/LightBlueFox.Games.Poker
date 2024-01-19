@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "ConsoleTCPServer": {
+      "commandName": "Project",
+      "commandLineArgs": "ALL 12332"
+    }
+  }
+}
