@@ -6,8 +6,17 @@ namespace LightBlueFox.Games.Poker
     public struct PlayerInfo: IEquatable<PlayerInfo>
     {
         public readonly string Name;
+        public PlayerStatus Status { get; internal set; }
+        public int Stack { get; internal set; }
+        public int CurrentStake { get; internal set; }
 
-        public PlayerInfo(string name) => Name = name;
+
+        public PlayerInfo(string name, int stack) 
+        { 
+            Name = name;
+            Stack = stack;
+            Status = PlayerStatus.NotPlaying;
+        }
 
         public bool Equals(PlayerInfo other)
         {

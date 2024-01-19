@@ -88,6 +88,13 @@ namespace LightBlueFox.Games.Poker.Utils
 
     public static class HandEvaluation
     {
+        public static string Info(this Action action, int level = 0)
+        {
+            if (action == Action.Call) return action + " (" + level + ")";
+            else if (action == Action.Raise) return action + " (" + (level != 0 ? level + " + " : "") + "AMOUNT)";
+            else return action.ToString();
+        }
+
         public record struct HalfResult(List<Card> mainCards, PokerHands handType);
 
         #region Hand Type Detection
@@ -226,9 +233,9 @@ namespace LightBlueFox.Games.Poker.Utils
         }
         #endregion
 
-        public static RoundEndPlayerInfo[] FindBestHands(PlayerHandle[] players, Card[] tableCards)
+        public static RoundEndPlayerInfo[] FindBestHands(PlayerHandle[] players, Card[] tableCards, int Pot)
         {
-            var notFolded = players.Where((p) => p.Status != PlayerStatus.Folded && p.Status != PlayerStatus.Disconnected).ToList();
+            var notFolded = players.Where((p) => p.Status != PlayerStatus.Folded).ToList();
             if (notFolded.Count < 2) throw new Exception("Too many players folded!");
             
             Dictionary<PlayerHandle, RoundEndPlayerInfo> bestPlayerHands = new ()
@@ -240,7 +247,8 @@ namespace LightBlueFox.Games.Poker.Utils
                     CardsVisible = true,
                     HasWon = true,
                     HasFolded = false,
-                    Player = notFolded[0].Player
+                    Player = notFolded[0].Player,
+                    Eval = new EvalResult[] { GetEvaluation(notFolded[0].Cards, tableCards) }
                 } }
             };
 
@@ -271,8 +279,17 @@ namespace LightBlueFox.Games.Poker.Utils
                     HasFolded = looser.Status == PlayerStatus.Folded,
                     HasWon = false,
                     Player = looser.Player,
-                    Eval = looser.Status == PlayerStatus.Folded ? new EvalResult[0] : new EvalResult[] { GetEvaluation(looser.Cards, tableCards) }
+                    Eval = looser.Status == PlayerStatus.Folded ? new EvalResult[0] : new EvalResult[] { GetEvaluation(looser.Cards, tableCards) },
+                    ReceivedCoins = 0
                 });
+            }
+            int winnings = Pot / bestPlayerHands.Count;
+            foreach (var winner in bestPlayerHands)
+            {
+                winner.Key.Stack += winnings;
+                var newRes = winner.Value;
+                newRes.ReceivedCoins = winnings;
+                bestPlayerHands[winner.Key] = newRes;
             }
             infos.AddRange(bestPlayerHands.Values);
             

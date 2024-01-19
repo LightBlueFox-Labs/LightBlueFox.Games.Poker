@@ -10,10 +10,46 @@ namespace LightBlueFox.Games.Poker.PlayerHandles.Remote
         {
             List<Type> types = new List<Type>();
             types.AddRange(handlerTypes);
-            types.AddRange(new[] { typeof(PokerProtocol), typeof(RemotePlayer), typeof(RemoteReceiver) });
+            types.AddRange(new[] { typeof(PokerProtocol), typeof(RemotePlayer), typeof(RemoteReceiver), typeof(Game) });
             SerializationLibrary sl = new SerializationLibrary();
             sl.AddSerializers(typeof(PlayerInfo), typeof(TurnAction), typeof(Card), typeof(EvalResult), typeof(RoundEndPlayerInfo), typeof(RoundResult));
             return new ProtocolDefinition(sl, types.ToArray());
+        }
+
+
+        [Message]
+        public struct GameInfoResponse
+        {
+            public string ID;
+            public GameState GameState;
+
+            public PlayerInfo[] Players;
+            
+            public int BigBlind;
+            public int SmallBlind;
+
+            public PlayerInfo You;
+        }
+
+        [Message]
+        public struct PlayerInfoChanged
+        {
+            public PlayerInfo Player;
+        }
+
+        [Message]
+        public struct GameInfoRequest { }
+
+        [Message]
+        public struct PlayerPlacedBet
+        {
+            public PlayerInfo Player;
+            public int BetAmount;
+            public bool WasBlind;
+
+            public int CurrentStake;
+            public int MinBet;
+            public int Pot;
         }
 
         [Message]
@@ -71,6 +107,10 @@ namespace LightBlueFox.Games.Poker.PlayerHandles.Remote
         {
             public Card[] YourCards;
             public PlayerInfo[] OtherPlayers;
+            
+            public int BtnIndex;
+            public int SBIndex;
+            public int BBIndex;
         }
     }
 }

@@ -1,15 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics.Metrics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static System.Collections.Specialized.BitVector32;
+﻿using LightBlueFox.Games.Poker.Utils;
+
 
 namespace LightBlueFox.Games.Poker.PlayerHandles
 {
     public class ConsolePlayer : PlayerHandle
     {
+        
         public override void OtherPlayerDoes(PlayerInfo playerInfo, TurnAction action)
         {
             Console.WriteLine("[{0}]: Player {1} performed {2}.", this.Player.Name, playerInfo.Name, action.ActionType);
@@ -25,17 +21,20 @@ namespace LightBlueFox.Games.Poker.PlayerHandles
             Console.WriteLine("\n[{0}]: Your turn. You can perform the following actions: ", Player.Name);
             for(int i = 0; i < actions.Length; i++)
             {
-                Console.WriteLine(" [{0}] {1}", i, actions[i]);
+                Console.WriteLine(" [{0}] {1}", i, actions[i].Info(CurrentGameStake - Player.CurrentStake));
             }
             Console.Write("Enter action Index: ");
             while (true)
             {
                 try
                 {
-                    return new TurnAction()
+                    var act = new TurnAction()
                     {
                         ActionType = actions[int.Parse(Console.ReadLine() ?? "")]
                     };
+                    if(act.ActionType == Action.Raise) act.BetAmount = GetValidBet();
+                    Console.WriteLine();
+                    return act;
                 }
                 catch
                 {
@@ -44,12 +43,29 @@ namespace LightBlueFox.Games.Poker.PlayerHandles
             }
         }
 
+        private int GetValidBet()
+        {
+            Console.Write("You have {0} coins. Enter Bet: ", Stack);
+            while (true) {
+                try
+                {
+                    int bet = int.Parse(Console.ReadLine() ?? "") + (CurrentGameStake - Player.CurrentStake);
+                    if(!Round.CanBet(this, bet, CurrentGameStake, CurrentMinBet, Action.Raise)) throw new Exception();
+                    return bet;
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine($"Invalid Bet. MinBet is {CurrentMinBet}.");
+                }
+            }
+        }
+
         protected override void RoundEnded(RoundResult res)
         {
-            Console.WriteLine("[{0}]: Round ended.", Player.Name);
+            Console.WriteLine("[{0}]: Round ended. Pot was {1}", Player.Name, CurrentPot);
             foreach (var i in res.PlayerInfos)
             {
-                Console.WriteLine($"     [{i.Player.Name}{(i.Player.Name == Player.Name ? " (YOU)" : "")}] {(i.HasWon ? "won" : "lost")}. {(i.CardsVisible ? "Cards: " + PrintCardCollection(i.Cards) : "")}{(i.Eval.Length == 1 ? ", eval: " + i.Eval[0] : "")}");
+                Console.WriteLine($"     [{i.Player.Name}{(i.Player.Name == Player.Name ? " (YOU)" : "")}] {(i.HasWon ? "won (+" + (i.ReceivedCoins - i.Player.CurrentStake) : "lost (-" + i.Player.CurrentStake )} coins). {(i.CardsVisible ? "Cards: " + PrintCardCollection(i.Cards) : "")}{(i.Eval.Length == 1 ? ", eval: " + i.Eval[0] : "")}");
             }
             Console.WriteLine("------------- ROUND END -----------\n\n");
         }
@@ -86,6 +102,11 @@ namespace LightBlueFox.Games.Poker.PlayerHandles
         public override void PlayerDisconnected(PlayerInfo playerInfo)
         {
             Console.WriteLine("[{0}]: Player {1} disconnected.", this.Player.Name, playerInfo.Name);
+        }
+
+        protected override void PlayerPlacedBet(PlayerInfo player, int amount, bool wasBlind, int newMinBet, int currentStake, int currentPot)
+        {
+            Console.WriteLine($"[{Player}]: {player} bet {amount} {(wasBlind ? "(blind)" : "")}. Current Stakes: {currentStake}. Current Pot {currentPot}. New MinBet: {newMinBet}");
         }
     }
 }

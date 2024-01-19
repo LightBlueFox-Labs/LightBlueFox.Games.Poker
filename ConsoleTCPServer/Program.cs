@@ -8,7 +8,7 @@ using LightBlueFox.Games.Poker.PlayerHandles;
 using LightBlueFox.Games.Poker.PlayerHandles.Remote;
 
 Console.WriteLine("Creating new game.");
-GameServer game = new("test");
+Game game = new("test");
 
 Console.WriteLine("Created game..");
 Console.WriteLine("Starting server on port 12332...");

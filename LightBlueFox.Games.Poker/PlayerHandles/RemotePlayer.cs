@@ -36,6 +36,13 @@ namespace LightBlueFox.Games.Poker.PlayerHandles
             return new RemotePlayer(c, name);
         }
 
+
+        public override void ChangePlayer(PlayerInfo player)
+        {
+            Connection.WriteMessage(new PlayerInfoChanged() { Player = player });
+            base.ChangePlayer(player);
+        }
+
         public override void OtherPlayerDoes(PlayerInfo playerInfo, TurnAction action)
         {
             Connection.WriteMessage<PlayerDoesAction>(new()
@@ -108,6 +115,19 @@ namespace LightBlueFox.Games.Poker.PlayerHandles
             Connection.WriteMessage<PlayerDisconnected>(new()
             {
                 Player = playerInfo,
+            });
+        }
+
+        protected override void PlayerPlacedBet(PlayerInfo player, int amount, bool wasBlind, int newMinBet, int currentStake, int currentPot)
+        {
+            Connection.WriteMessage<PlayerPlacedBet>(new()
+            {
+                Player = player,
+                BetAmount = amount,
+                WasBlind = wasBlind,
+                MinBet = newMinBet,
+                CurrentStake = currentStake,
+                Pot = currentPot
             });
         }
     }

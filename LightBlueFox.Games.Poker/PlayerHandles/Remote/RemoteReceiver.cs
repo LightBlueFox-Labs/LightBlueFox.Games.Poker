@@ -7,7 +7,6 @@ namespace LightBlueFox.Games.Poker.PlayerHandles.Remote
     {
         public readonly PlayerHandle MyPlayer;
         public readonly ProtocolConnection Connection;
-
         public RemoteReceiver(PlayerHandle myPlayer, ProtocolConnection connection)
         {
             Receivers.Add(connection, this);
@@ -18,6 +17,7 @@ namespace LightBlueFox.Games.Poker.PlayerHandles.Remote
                 Name = MyPlayer.Player.Name
             });
         }
+
 
         private static Dictionary<ProtocolConnection, RemoteReceiver> Receivers = new Dictionary<ProtocolConnection, RemoteReceiver>();
 
@@ -70,6 +70,23 @@ namespace LightBlueFox.Games.Poker.PlayerHandles.Remote
         public static void RoundEndedHandler(RoundEnds re, MessageInfo inf)
         {
             Receivers[inf.From].MyPlayer.EndRound(re.Result);
+        }
+
+        [MessageHandler]
+        public static void GameInfoResponseHandler(GameInfoResponse gameInfoResponse, MessageInfo inf)
+        {
+            throw new NotImplementedException();
+        }
+
+        [MessageHandler]
+        public static void InformPlayerBetHandler(PlayerPlacedBet bet, MessageInfo inf)
+        {
+            Receivers[inf.From].MyPlayer.PlayerBet(bet.Player, bet.BetAmount, bet.WasBlind, bet.MinBet, bet.CurrentStake, bet.Pot);
+        }
+
+        [MessageHandler]
+        public static void PlayerInfoChangedHandler(PlayerInfoChanged pic, MessageInfo inf) {
+            Receivers[inf.From].MyPlayer.ChangePlayer(pic.Player);
         }
     }
 }

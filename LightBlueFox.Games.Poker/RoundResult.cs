@@ -17,6 +17,7 @@ namespace LightBlueFox.Games.Poker
         public bool CardsVisible;
         public bool HasFolded;
         public bool HasWon;
+        public int ReceivedCoins;
     }
 
     [CompositeSerialize]
@@ -24,32 +25,39 @@ namespace LightBlueFox.Games.Poker
     {
         public Card[] TableCards;
         public RoundEndPlayerInfo[] PlayerInfos;
+        public int Pot;
 
-        public RoundResult(Card[] tableCards, RoundEndPlayerInfo[] playerInfos)
+        public RoundResult(Card[] tableCards, RoundEndPlayerInfo[] playerInfos, int pot)
         {
             TableCards = tableCards;
             PlayerInfos = playerInfos;
+            Pot = pot;
         }
 
         public RoundResult() { }
 
-        public static RoundResult DetermineRoundResult(Card[] Table, PlayerHandle[] handles)
+        public static RoundResult DetermineRoundResult(Card[] Table, PlayerHandle[] handles, int Pot)
         {
-            List<PlayerHandle> remPlayers = handles.Where((p) => p.Status != PlayerStatus.Folded && p.Status != PlayerStatus.Disconnected).ToList();
-            if (remPlayers.Count == 0) throw new ArgumentException("All players seem to have folded!");
-            if (remPlayers.Count == 1) {
-                return new RoundResult(Table, handles.Select((p) => new RoundEndPlayerInfo
+            int remPlayers = handles.Count((p) => p.Status != PlayerStatus.Folded);
+            if (remPlayers == 0) throw new ArgumentException("All players seem to have folded!");
+            if (remPlayers == 1) {
+                return new RoundResult(Table, handles.Select((p) =>
                 {
-                    Player = p,
-                    CardsVisible = false,
-                    Cards = new Card[0],
-                    HasFolded = p.Status == PlayerStatus.Folded,
-                    HasWon = p.Status != PlayerStatus.Folded,
-                    Eval = new EvalResult[0]
-                }).ToArray());
+                    if (p.Status != PlayerStatus.Folded) { p.Stack += Pot; }
+                    return new RoundEndPlayerInfo()
+                    {
+                        Player = p,
+                        CardsVisible = false,
+                        Cards = new Card[0],
+                        HasFolded = p.Status == PlayerStatus.Folded,
+                        HasWon = p.Status != PlayerStatus.Folded,
+                        Eval = new EvalResult[0],
+                        ReceivedCoins = p.Status != PlayerStatus.Folded ? Pot : 0
+                    };
+                }).ToArray(), Pot);
             }
 
-            return new(Table, HandEvaluation.FindBestHands(handles, Table));
+            return new(Table, HandEvaluation.FindBestHands(handles, Table, Pot), Pot);
         }
 
         
