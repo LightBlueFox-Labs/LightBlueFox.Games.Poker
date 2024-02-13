@@ -11,7 +11,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LightBlueFox.Games.Poker", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests.LightBlueFox.Games.Poker", "Tests.LightBlueFox.Games.Poker\Tests.LightBlueFox.Games.Poker.csproj", "{FFCBC748-A763-44F2-9ED3-B5315D3EEB08}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LightBlueFox.Games.Poker.Web", "BlazorTest\LightBlueFox.Games.Poker.Web.csproj", "{92AC59B9-BC50-40AB-A55E-6419542FE1F7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LightBlueFox.Games.Poker.Web", "LightBlueFox.Games.Poker.Web\LightBlueFox.Games.Poker.Web.csproj", "{92AC59B9-BC50-40AB-A55E-6419542FE1F7}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Console", "Console", "{EAC0D45C-4CAF-47C2-95DB-5CE6E61E59E7}"
 EndProject
