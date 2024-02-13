@@ -30,9 +30,12 @@ namespace LightBlueFox.Games.Poker
 
         private int currentStake = 0;
         private int Pot = 0;
-        private int lastBet = 0;
+        private int minBet = 0;
 
-        public Round(PlayerHandle[] players, int sb, int bb, int buttonInd) {
+        private readonly int RoundNR;
+
+
+		public Round(PlayerHandle[] players, int sb, int bb, int buttonInd, int roundNR) {
             Players = players;
             notFolded = players.Length;
             ButtonIndex = buttonInd;
@@ -40,11 +43,26 @@ namespace LightBlueFox.Games.Poker
             BBIndex = (SBIndex + 1) % Players.Length;
             BB = bb;
             SB = sb;
+
+            if(ButtonIndex == SBIndex)
+            {
+                players[ButtonIndex].Role = PlayerRole.SmallBlind | PlayerRole.Button;
+			}
+            else
+            {
+                players[ButtonIndex].Role = PlayerRole.Button;
+				players[SBIndex].Role = PlayerRole.SmallBlind;
+			}
+			players[BBIndex].Role = PlayerRole.BigBlind;
+
+
+			RoundNR = roundNR;
         }
 
 
-        private RoundResult inform(RoundResult res)
+        private RoundResult inform(RoundResult res, ref GameState state)
         {
+            state = GameState.NotRunning;
             foreach (var p in Players)
             {
                 p.EndRound(res);
@@ -53,11 +71,11 @@ namespace LightBlueFox.Games.Poker
             return res;
         }
 
-        public RoundResult PlayRound()
+        public RoundResult PlayRound(ref GameState state)
         {
             foreach (var p in Players)
             {
-                p.StartRound(Deck.PopRandom(2), Array.ConvertAll<PlayerHandle, PlayerInfo>(Players, (p) => p));
+                p.StartRound(Deck.PopRandom(2), Array.ConvertAll<PlayerHandle, PlayerInfo>(Players, (p) => p), RoundNR, ButtonIndex, SBIndex, BBIndex);
             }
 
             // SB Bet
@@ -69,32 +87,32 @@ namespace LightBlueFox.Games.Poker
 
             foreach (var d in _DEALS)
             {
-                
+                minBet = BB;
                 TableCards.AddRange(Deck.PopRandom(d));
                 Console.WriteLine($"[SERVER] New deal. Now {TableCards.Count}/5 Cards in the middle.");
-                foreach (var p in Players) p.TableCardsChanged(TableCards.ToArray());
+                foreach (var p in Players) p.NewCardsDealt(TableCards.ToArray(), minBet);
 
-                List<PlayerHandle> notFolded = Players.Where((p) => p.Status != PlayerStatus.Folded).ToList();
-
+                notFolded = Players.Count((p) => p.Status != PlayerStatus.Folded);
+                
                 int dealEnd = Players.Length;
                 for (int i = 0; i < dealEnd; i++)
                 {
-                    PerformPlayerTurn(notFolded[(i + roundOffset) % Players.Length], ref dealEnd, i);
-                }
+                    if(PerformPlayerTurn(Players[(i + roundOffset) % Players.Length], ref dealEnd, i, i == 0)) return inform(RoundResult.DetermineRoundResult(TableCards.ToArray(), Players, Pot), ref state);
+				}
                 roundOffset = ButtonIndex + 1;
             }
-            return inform(RoundResult.DetermineRoundResult(TableCards.ToArray(), Players, Pot));
+            return inform(RoundResult.DetermineRoundResult(TableCards.ToArray(), Players, Pot), ref state);
         }
 
-        public static bool CanBet(PlayerHandle player, int betAmount, int currentStake, int minBet, Action? performedAction = null)
+        public static bool CanBet(PlayerHandle player, int betAmount, int currentStake, int minBet, PokerAction? performedAction = null)
         {
             int level = (currentStake - player.CurrentStake ?? throw new NullReferenceException());
             int absoluteBetSize = (betAmount - level);
-            return player.Stack >= betAmount && ((absoluteBetSize == 0 && (performedAction == Action.Call || performedAction == null)) || (absoluteBetSize >= minBet && (performedAction == Action.Raise || performedAction == null)));
+            return player.Stack >= betAmount && ((absoluteBetSize == 0 && (performedAction == PokerAction.Call || performedAction == null)) || (absoluteBetSize >= minBet && (performedAction == PokerAction.Raise || performedAction == null)));
         }
-        private bool tryBet(PlayerHandle player, int betAmount, bool isBlind, Action? performedAction = null)
+        private bool tryBet(PlayerHandle player, int betAmount, bool isBlind, PokerAction? performedAction = null)
         {
-            if (!CanBet(player, betAmount, currentStake, lastBet, performedAction)) return false;
+            if (!CanBet(player, betAmount, currentStake, minBet, performedAction)) return false;
 
             int level = (currentStake - player.CurrentStake ?? throw new NullReferenceException());
             int absoluteBetSize = (betAmount - level);
@@ -104,24 +122,38 @@ namespace LightBlueFox.Games.Poker
             newP.Stack -= betAmount;
             currentStake += absoluteBetSize;
             player.ChangePlayer(newP);
-            if (absoluteBetSize > lastBet) lastBet = absoluteBetSize;
-            foreach (var p in Players) { p.PlayerBet(player, betAmount, isBlind, lastBet, currentStake, Pot); }
+            if (absoluteBetSize > minBet) minBet = absoluteBetSize;
+            foreach (var p in Players) { p.PlayerBet(player, betAmount, isBlind, minBet, currentStake, Pot); }
             return true;
         }
 
-        private RoundResult? PerformPlayerTurn(PlayerHandle player, ref int dealEnd, int currentIndx)
+        private bool PerformPlayerTurn(PlayerHandle player, ref int dealEnd, int currentIndx, bool isFirst)
         {
-            if (player.Status == PlayerStatus.Folded) return null;
-            Console.WriteLine($"[SERVER] It's Player {player.Player}'s turn.");
-            var options = new Action[]
+			
+			if (player.Status == PlayerStatus.Folded) return false;
+            
+            
+            ActionInfo result;
+			var options = new PokerAction[]
+			{
+				PokerAction.Fold,
+				(player.CurrentStake < currentStake ? PokerAction.Call : PokerAction.Check),
+				PokerAction.Raise
+			};
+
+			if (player.isDisconnected) result = new() { ActionType = PokerAction.Fold };
+            else
             {
-                        (player.CurrentStake < currentStake ? Action.Call : Action.Check),
-                        Action.Fold,
-                        Action.Raise
-            };
-
-            var result = player.StartTurn(options);
-
+                Console.WriteLine($"[SERVER] It's Player {player.Player}'s turn.");
+                foreach (var p in Players) {
+                    p.PlayersTurn(new()
+                    {
+                        Player = player,
+                        NewRound = isFirst
+                    });    
+                }
+                result = player.StartTurn(options);
+            }
             Console.WriteLine($"[SERVER] Player {player.Player} does {result.ActionType}.");
             foreach (var p in Players) { p.OtherPlayerDoes(player, result); }
 
@@ -129,19 +161,19 @@ namespace LightBlueFox.Games.Poker
 
             switch (result.ActionType)
             {
-                case Action.Fold:
-                    if (notFolded == 2) return inform(RoundResult.DetermineRoundResult(TableCards.ToArray(), Players, Pot));
+                case PokerAction.Fold:
+					notFolded -= 1;
+					if (notFolded == 1) return true;
                     break;
-                
-                case Action.Check:
+                case PokerAction.Check:
                     if (player.CurrentStake < currentStake) throw new InvalidDataException("Player performed illegal check.");
                     break;
                 
-                case Action.Raise:
+                case PokerAction.Raise:
                     if (!tryBet(player, result.BetAmount, false, result.ActionType)) throw new InvalidDataException("Player performed illegal raise.");
                     dealEnd = currentIndx + Players.Length;
                     break;
-                case Action.Call:
+                case PokerAction.Call:
                     if (!tryBet(player, currentStake - player.Player.CurrentStake, false, result.ActionType)) throw new InvalidDataException("Player performed illegal call.");
                     break;
 
@@ -149,7 +181,7 @@ namespace LightBlueFox.Games.Poker
                     throw new NotImplementedException();
             }
 
-            return null;
+            return false;
         }
 
 
@@ -159,12 +191,12 @@ namespace LightBlueFox.Games.Poker
     
 
     [CompositeSerialize]
-    public struct TurnAction {
-        public Action ActionType;
+    public struct ActionInfo {
+        public PokerAction ActionType;
         public int BetAmount;
     }
 
-    public enum Action
+    public enum PokerAction
     {
         Fold,
         Check,

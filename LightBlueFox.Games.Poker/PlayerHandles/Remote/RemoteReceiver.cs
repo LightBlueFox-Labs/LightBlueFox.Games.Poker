@@ -39,7 +39,7 @@ namespace LightBlueFox.Games.Poker.PlayerHandles.Remote
         [MessageHandler]
         public static void PlayerConnectedHandler(PlayerConnected pc, MessageInfo inf)
         {
-            Receivers[inf.From].MyPlayer.PlayerConnected(pc.Player);
+            Receivers[inf.From].MyPlayer.PlayerConnected(pc.Player, pc.WasReconnect);
         }
 
         [MessageHandler]
@@ -55,15 +55,15 @@ namespace LightBlueFox.Games.Poker.PlayerHandles.Remote
         }
 
         [MessageHandler]
-        public static void TableCardsChangedHandler(TableCardsChange tcc, MessageInfo inf)
+        public static void NewDealHandler(NewDealInfo ndi, MessageInfo inf)
         {
-            Receivers[inf.From].MyPlayer.TableCardsChanged(tcc.TableCards);
+            Receivers[inf.From].MyPlayer.NewCardsDealt(ndi.TableCards, ndi.MinBet);
         }
 
         [MessageHandler]
         public static void RoundStartedHandler(RoundStarted rs, MessageInfo inf)
         {
-            Receivers[inf.From].MyPlayer.StartRound(rs.YourCards, rs.OtherPlayers);
+            Receivers[inf.From].MyPlayer.StartRound(rs.YourCards, rs.OtherPlayers, rs.RoundNR, rs.BtnIndex, rs.SBIndex, rs.BBIndex);
         }
 
         [MessageHandler]
@@ -73,9 +73,9 @@ namespace LightBlueFox.Games.Poker.PlayerHandles.Remote
         }
 
         [MessageHandler]
-        public static void GameInfoResponseHandler(GameInfoResponse gameInfoResponse, MessageInfo inf)
+        public static void GameInfoResponseHandler(GameInfo gameInfoResponse, MessageInfo inf)
         {
-            throw new NotImplementedException();
+            Receivers[inf.From].MyPlayer.TellGameInfo(gameInfoResponse);
         }
 
         [MessageHandler]
@@ -87,6 +87,12 @@ namespace LightBlueFox.Games.Poker.PlayerHandles.Remote
         [MessageHandler]
         public static void PlayerInfoChangedHandler(PlayerInfoChanged pic, MessageInfo inf) {
             Receivers[inf.From].MyPlayer.ChangePlayer(pic.Player);
+        }
+
+        [MessageHandler]
+        public static void PlayersTurnHandler(PlayersTurn pt, MessageInfo inf)
+        {
+            Receivers[inf.From].MyPlayer.PlayersTurn(pt);
         }
     }
 }

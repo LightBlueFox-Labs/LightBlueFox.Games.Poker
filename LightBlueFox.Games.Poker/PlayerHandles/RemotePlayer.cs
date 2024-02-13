@@ -11,10 +11,20 @@ namespace LightBlueFox.Games.Poker.PlayerHandles
 {
     public class RemotePlayer : PlayerHandle
     {
-        public readonly ProtocolConnection Connection;
+        private ProtocolConnection _connection;
+        public ProtocolConnection? Connection { 
+            get { 
+                if(!isDisconnected) return _connection;
+                else return null;
+            } 
+            private set { 
+                if(value == null) throw new ArgumentNullException("value");
+                else _connection = value;
+            } 
+        }
         private RemotePlayer(ProtocolConnection connection, string name) : base(name)
         {
-            Connection = connection;
+            _connection = connection;
         }
 
         private static Dictionary<ProtocolConnection, TaskCompletionSource<string>> WaitingForReady = new();
@@ -35,40 +45,41 @@ namespace LightBlueFox.Games.Poker.PlayerHandles
             Console.WriteLine("Player identifies as " + name);
             return new RemotePlayer(c, name);
         }
-
+        
 
         public override void ChangePlayer(PlayerInfo player)
         {
-            Connection.WriteMessage(new PlayerInfoChanged() { Player = player });
+            Connection?.WriteMessage(new PlayerInfoChanged() { Player = player });
             base.ChangePlayer(player);
         }
 
-        public override void OtherPlayerDoes(PlayerInfo playerInfo, TurnAction action)
+        public override void OtherPlayerDoes(PlayerInfo playerInfo, ActionInfo action)
         {
-            Connection.WriteMessage<PlayerDoesAction>(new()
+            Connection?.WriteMessage<PlayerDoesAction>(new()
             {
                 Player = playerInfo,
                 Action = action
             });
         }
 
-        public override void TableCardsChanged(Card[] cards)
+        protected override void NewDealRound(Card[] cards, int minBet)
         {
-            Connection.WriteMessage<TableCardsChange>(new()
+            Connection?.WriteMessage<NewDealInfo>(new()
             {
-                TableCards = cards
+                TableCards = cards,
+                MinBet = minBet
             });
         }
 
-        public static Dictionary<uint, TaskCompletionSource<TurnAction>> WaitingForActions = new();
+        public static Dictionary<uint, TaskCompletionSource<ActionInfo>> WaitingForActions = new();
         public static uint MaxTURNID = 0;
 
 
-        protected override TurnAction DoTurn(Action[] actions)
+        protected override ActionInfo DoTurn(PokerAction[] actions)
         {
             var id = MaxTURNID++;
-            WaitingForActions.Add(id, new TaskCompletionSource<TurnAction>());
-            Connection.WriteMessage<DoTurn>(new()
+            WaitingForActions.Add(id, new TaskCompletionSource<ActionInfo>());
+            Connection?.WriteMessage<DoTurn>(new()
             {
                 PossibleActions = actions,
                 TurnID = id
@@ -87,32 +98,37 @@ namespace LightBlueFox.Games.Poker.PlayerHandles
 
         protected override void RoundEnded(RoundResult res)
         {
-            Connection.WriteMessage<RoundEnds>(new()
+            Connection?.WriteMessage<RoundEnds>(new()
             {
                 Result = res
             });
         }
 
-        protected override void RoundStarted(Card[] cards, PlayerInfo[] info)
+        protected override void RoundStarted(Card[] cards, PlayerInfo[] info, int RoundNR, int btn, int sb, int bb)
         {
-            Connection.WriteMessage<RoundStarted>(new()
+            Connection?.WriteMessage<RoundStarted>(new()
             {
                 OtherPlayers = info,
-                YourCards = cards
+                YourCards = cards,
+                RoundNR = RoundNR,
+                BBIndex = bb,
+                BtnIndex = btn,
+                SBIndex = sb,
             });
         }
 
-        public override void PlayerConnected(PlayerInfo playerInfo)
+        public override void PlayerConnected(PlayerInfo playerInfo, bool wasReconnect)
         {
-            Connection.WriteMessage<PlayerConnected>(new()
+            Connection?.WriteMessage<PlayerConnected>(new()
             {
                 Player = playerInfo,
+                WasReconnect = wasReconnect
             });
         }
 
         public override void PlayerDisconnected(PlayerInfo playerInfo)
         {
-            Connection.WriteMessage<PlayerDisconnected>(new()
+            Connection?.WriteMessage<PlayerDisconnected>(new()
             {
                 Player = playerInfo,
             });
@@ -120,7 +136,7 @@ namespace LightBlueFox.Games.Poker.PlayerHandles
 
         protected override void PlayerPlacedBet(PlayerInfo player, int amount, bool wasBlind, int newMinBet, int currentStake, int currentPot)
         {
-            Connection.WriteMessage<PlayerPlacedBet>(new()
+            Connection?.WriteMessage<PlayerPlacedBet>(new()
             {
                 Player = player,
                 BetAmount = amount,
@@ -130,5 +146,20 @@ namespace LightBlueFox.Games.Poker.PlayerHandles
                 Pot = currentPot
             });
         }
-    }
+
+		public override void Reconnect(PlayerHandle newPlayerHandle)
+		{
+			if(newPlayerHandle is RemotePlayer rp) Connection = rp.Connection;
+		}
+
+		public override void TellGameInfo(GameInfo gameInfo)
+		{
+            Connection?.WriteMessage<GameInfo>(gameInfo);
+		}
+
+		public override void PlayersTurn(PlayersTurn pt)
+		{
+			Connection?.WriteMessage(pt);
+		}
+	}
 }

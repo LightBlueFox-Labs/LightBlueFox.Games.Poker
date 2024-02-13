@@ -12,13 +12,13 @@ namespace LightBlueFox.Games.Poker.PlayerHandles.Remote
             types.AddRange(handlerTypes);
             types.AddRange(new[] { typeof(PokerProtocol), typeof(RemotePlayer), typeof(RemoteReceiver), typeof(Game) });
             SerializationLibrary sl = new SerializationLibrary();
-            sl.AddSerializers(typeof(PlayerInfo), typeof(TurnAction), typeof(Card), typeof(EvalResult), typeof(RoundEndPlayerInfo), typeof(RoundResult));
+            sl.AddSerializers(typeof(PlayerInfo), typeof(ActionInfo), typeof(Card), typeof(EvalResult), typeof(RoundEndPlayerInfo), typeof(RoundResult));
             return new ProtocolDefinition(sl, types.ToArray());
         }
 
 
         [Message]
-        public struct GameInfoResponse
+        public struct GameInfo
         {
             public string ID;
             public GameState GameState;
@@ -27,8 +27,13 @@ namespace LightBlueFox.Games.Poker.PlayerHandles.Remote
             
             public int BigBlind;
             public int SmallBlind;
+        }
 
-            public PlayerInfo You;
+        [Message]
+        public struct PlayersTurn
+        {
+            public PlayerInfo Player;
+            public bool NewRound;
         }
 
         [Message]
@@ -61,27 +66,28 @@ namespace LightBlueFox.Games.Poker.PlayerHandles.Remote
         public struct PlayerDoesAction
         {
             public PlayerInfo Player;
-            public TurnAction Action;
+            public ActionInfo Action;
         }
 
         [Message]
         public struct DoTurn
         {
-            public Action[] PossibleActions;
+            public PokerAction[] PossibleActions;
             public uint TurnID;
         }
 
         [Message]
         public struct PerformAction
         {
-            public TurnAction Action;
+            public ActionInfo Action;
             public uint TurnID;
         }
 
         [Message]
-        public struct TableCardsChange
+        public struct NewDealInfo
         {
             public Card[] TableCards;
+            public int MinBet;
         }
 
         [Message]
@@ -94,6 +100,7 @@ namespace LightBlueFox.Games.Poker.PlayerHandles.Remote
         public struct PlayerConnected
         {
             public PlayerInfo Player;
+            public bool WasReconnect;
         }
 
         [Message]
@@ -111,6 +118,8 @@ namespace LightBlueFox.Games.Poker.PlayerHandles.Remote
             public int BtnIndex;
             public int SBIndex;
             public int BBIndex;
+
+            public int RoundNR;
         }
     }
 }

@@ -88,10 +88,10 @@ namespace LightBlueFox.Games.Poker.Utils
 
     public static class HandEvaluation
     {
-        public static string Info(this Action action, int level = 0)
+        public static string Info(this PokerAction action, int level = 0)
         {
-            if (action == Action.Call) return action + " (" + level + ")";
-            else if (action == Action.Raise) return action + " (" + (level != 0 ? level + " + " : "") + "AMOUNT)";
+            if (action == PokerAction.Call) return action + " (" + level + ")";
+            else if (action == PokerAction.Raise) return action + " (" + (level != 0 ? level + " + " : "") + "AMOUNT)";
             else return action.ToString();
         }
 

@@ -1,0 +1,42 @@
+﻿@using LightBlueFox.Games.Poker;
+@using System.ComponentModel;
+
+@code {
+
+	[Parameter]
+	public Suit? Suit { get; set; }
+
+	[Parameter]
+	public CardValue? Value { get; set; }
+
+	[Parameter]
+	[DefaultValue(1.0)]
+	public double Scale { get; set; } = 1;
+
+	[Parameter]
+	[DefaultValue(false)]
+	public bool ShowBack { get; set; } = false;
+
+	[Parameter]
+	[DefaultValue(false)]
+	public bool ShowAsPlaceHolder { get; set; } = false;
+
+	[Parameter]
+	public string Class { get; set; } = "";
+
+	[Parameter]
+	public string Style { get; set; } = "";
+
+
+	private string card_img_name
+	{
+		get
+		{
+			return ShowAsPlaceHolder ? "placeholder.svg" : ShowBack || Value == null || Suit == null ? "back.svg" : Suit.ToString() + "_" + (((int)Value) > (int)CardValue.Ten ? Value.ToString() : ((int)Value).ToString()) + ".svg";
+		}
+	}
+}
+
+
+
+<object class="@Class" style="transform: scale(@Scale); @Style" data="/resc/cards/@card_img_name" type="image/svg+xml"/>

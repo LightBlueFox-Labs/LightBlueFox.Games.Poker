@@ -1,4 +1,5 @@
-﻿using LightBlueFox.Games.Poker.Utils;
+﻿using LightBlueFox.Games.Poker.PlayerHandles.Remote;
+using LightBlueFox.Games.Poker.Utils;
 
 
 namespace LightBlueFox.Games.Poker.PlayerHandles
@@ -6,17 +7,17 @@ namespace LightBlueFox.Games.Poker.PlayerHandles
     public class ConsolePlayer : PlayerHandle
     {
         
-        public override void OtherPlayerDoes(PlayerInfo playerInfo, TurnAction action)
+        public override void OtherPlayerDoes(PlayerInfo playerInfo, ActionInfo action)
         {
             Console.WriteLine("[{0}]: Player {1} performed {2}.", this.Player.Name, playerInfo.Name, action.ActionType);
         }
 
-        public override void TableCardsChanged(Card[] cards)
+        protected override void NewDealRound(Card[] cards, int minBet)
         {
             Console.WriteLine("[{0}]: Table cards changed, are now {1}.", Player.Name, PrintCardCollection(cards));
         }
 
-        protected override TurnAction DoTurn(Action[] actions)
+        protected override ActionInfo DoTurn(PokerAction[] actions)
         {
             Console.WriteLine("\n[{0}]: Your turn. You can perform the following actions: ", Player.Name);
             for(int i = 0; i < actions.Length; i++)
@@ -28,11 +29,11 @@ namespace LightBlueFox.Games.Poker.PlayerHandles
             {
                 try
                 {
-                    var act = new TurnAction()
+                    var act = new ActionInfo()
                     {
                         ActionType = actions[int.Parse(Console.ReadLine() ?? "")]
                     };
-                    if(act.ActionType == Action.Raise) act.BetAmount = GetValidBet();
+                    if(act.ActionType == PokerAction.Raise) act.BetAmount = GetValidBet();
                     Console.WriteLine();
                     return act;
                 }
@@ -50,7 +51,7 @@ namespace LightBlueFox.Games.Poker.PlayerHandles
                 try
                 {
                     int bet = int.Parse(Console.ReadLine() ?? "") + (CurrentGameStake - Player.CurrentStake);
-                    if(!Round.CanBet(this, bet, CurrentGameStake, CurrentMinBet, Action.Raise)) throw new Exception();
+                    if(!Round.CanBet(this, bet, CurrentGameStake, CurrentMinBet, PokerAction.Raise)) throw new Exception();
                     return bet;
                 }
                 catch (Exception)
@@ -70,7 +71,9 @@ namespace LightBlueFox.Games.Poker.PlayerHandles
             Console.WriteLine("------------- ROUND END -----------\n\n");
         }
 
-        protected override void RoundStarted(Card[] cards, PlayerInfo[] info)
+
+
+        protected override void RoundStarted(Card[] cards, PlayerInfo[] info, int RoundNR, int btnIndex, int sbIndex, int bbIndex)
         {
             Console.WriteLine("------------ ROUND START ----------");
             Console.WriteLine("[{0}]: Round started. Your cards: {1}", Player.Name, PrintCardCollection(cards));
@@ -94,9 +97,9 @@ namespace LightBlueFox.Games.Poker.PlayerHandles
             return string.Join("-", strs);
         }
 
-        public override void PlayerConnected(PlayerInfo playerInfo)
+        public override void PlayerConnected(PlayerInfo playerInfo, bool wasReconnect)
         {
-            Console.WriteLine("[{0}]: New player: {1}", this.Player.Name, playerInfo.Name);
+            Console.WriteLine("[{0}]: Player {1} " + (wasReconnect ? "reconnected." : "connected."), this.Player.Name, playerInfo.Name);
         }
 
         public override void PlayerDisconnected(PlayerInfo playerInfo)
@@ -108,5 +111,20 @@ namespace LightBlueFox.Games.Poker.PlayerHandles
         {
             Console.WriteLine($"[{Player}]: {player} bet {amount} {(wasBlind ? "(blind)" : "")}. Current Stakes: {currentStake}. Current Pot {currentPot}. New MinBet: {newMinBet}");
         }
-    }
+
+		public override void Reconnect(PlayerHandle newPlayerHandle)
+		{
+			
+		}
+
+		public override void PlayersTurn(PokerProtocol.PlayersTurn pt)
+		{
+            Console.WriteLine($"[{Player}]: It is now {pt.Player}'s turn.");
+		}
+
+		public override void TellGameInfo(PokerProtocol.GameInfo gameInfo)
+		{
+            Console.WriteLine($"[{Player}]: Game Info: ID={gameInfo.ID}, SB={gameInfo.SmallBlind}, BB={gameInfo.BigBlind}, STATE={gameInfo.GameState}");
+		}
+	}
 }
