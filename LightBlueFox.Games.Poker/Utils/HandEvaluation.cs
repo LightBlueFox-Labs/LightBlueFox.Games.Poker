@@ -25,13 +25,31 @@ namespace LightBlueFox.Games.Poker.Utils
             return customComparers.GetValueOrDefault(hand) ?? CompareAny;
         }
 
-        private static int CompareHandAverages(EvalResult e1, EvalResult e2)
+        private static int CompareKickers(EvalResult e1, EvalResult e2)
         {
-            var getAvg = (List<Card> cc) => (double)cc.Sum((c) => (int)c.Value) / cc.Count;
-            var fillCC = (EvalResult e) => e.MainCards.Concat(new List<Card>(e.RemainingCards).GetHighest(5 - e.MainCards.Length)).ToList();
+			Card[] list1 = e1.MainCards;
+			double avg1 = (double)list1.Sum((c) => (int)c.Value) / list1.Length;
 
+			Card[] list2 = e2.MainCards;
+			double avg2 = (double)list2.Sum((c) => (int)c.Value) / list2.Length;
 
-            return getAvg(fillCC(e1)).CompareTo(getAvg(fillCC(e2)));
+            int comp = avg1.CompareTo(avg2);
+
+            if (comp != 0) return comp;
+
+            int nrOfKickers = 5 - e1.MainCards.Length;
+
+            Card[] arr1 = e1.RemainingCards.GetHighest(nrOfKickers);
+            Card[] arr2 = e2.RemainingCards.GetHighest(nrOfKickers);
+
+            for(int i = 0; i < nrOfKickers; i++)
+            {
+                comp = arr1[i].CompareTo(arr2[i]);
+
+                if (comp != 0) return comp;
+            }
+
+			return 0;
         }
 
         private static int CompareAny(EvalResult e1, EvalResult e2)
@@ -39,23 +57,25 @@ namespace LightBlueFox.Games.Poker.Utils
             int mainComp = new List<Card>(e1.MainCards).GetHighest().CompareTo(new List<Card>(e2.MainCards).GetHighest());
             if (mainComp != 0) return mainComp;
 
-            int mainAvg = CompareHandAverages(e1, e2);
-            if (mainAvg != 0) return mainAvg;
-
-            return new List<Card>(new List<Card>(e1.RemainingCards)).GetHighest().CompareTo(new List<Card>(e2.RemainingCards).GetHighest());
+            return CompareKickers(e1, e2);
         }
 
         private static int CompareStraights(EvalResult e1, EvalResult e2)
         {
 
-            int cany = CompareAny(e1, e2);
+            int cAny = CompareAny(e1, e2);
 
-            // This makes sure that any straight with ace is automatically the lowest possible straight
-            // by checking if the hand that was previously evaluated as stronger contains an ace. if so automatically return the result opposite of what was previously assumed.
-            EvalResult[] evals = { e2, e1 };
-            if (cany != 0 && new List<Card>(evals[Math.Clamp(cany, 0, 1)].MainCards).Count((c) => c.Value == CardValue.Ace) > 0) return cany * -1;
+            // Detect straights that go up from Ace to five, which should be the weakest but due to the ace are rated the highest by CompareAny
+            if(cAny != 0)
+            {
+                var straightInQuestion = cAny > 0 ? e1 : e2;
+                var highest2Cards = straightInQuestion.MainCards.GetHighest(2);
 
-            return cany;
+                // If the highest two cards of the straight evaluated to be stronger are ace and five, it has to be the weakest straight, so eval is reversed.
+                if (highest2Cards[0].Value == CardValue.Ace && highest2Cards[1].Value == CardValue.Five) cAny *= -1;
+            }
+
+            return cAny;
         }
 
     }
@@ -144,7 +164,11 @@ namespace LightBlueFox.Games.Poker.Utils
 
         public static Card GetHighest(this List<Card> cards) => cards.OrderByDescending(c => c).Take(1).ToArray().First();
         
-        public static Card[] GetHighest(this List<Card> cards, int count) => cards.OrderByDescending(c => c).Take(count).ToArray();
+		public static Card GetHighest(this Card[] cards) => cards.OrderByDescending(c => c).Take(1).ToArray().First();
+
+		public static Card[] GetHighest(this List<Card> cards, int count) => count == 0 ? new Card[0] : cards.OrderByDescending(c => c).Take(count).ToArray();
+
+		public static Card[] GetHighest(this Card[] cards, int count) => count == 0 ? new Card[0] : cards.OrderByDescending(c => c).Take(count).ToArray();
         
 
         public static HalfResult? FindPairCombos(List<Card>[] valueCounts)
