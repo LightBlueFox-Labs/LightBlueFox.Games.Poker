@@ -134,7 +134,7 @@ namespace LightBlueFox.Games.Poker.PlayerHandles
             });
         }
 
-        protected override void PlayerPlacedBet(PlayerInfo player, int amount, bool wasBlind, int newMinBet, int currentStake, int currentPot)
+        protected override void PlayerPlacedBet(PlayerInfo player, int amount, bool wasBlind, int newMinBet, int totalStake, PotInfo[] pots)
         {
             Connection?.WriteMessage<PlayerPlacedBet>(new()
             {
@@ -142,8 +142,8 @@ namespace LightBlueFox.Games.Poker.PlayerHandles
                 BetAmount = amount,
                 WasBlind = wasBlind,
                 MinBet = newMinBet,
-                CurrentStake = currentStake,
-                Pot = currentPot
+                TotalStake = totalStake,
+                Pots = pots
             });
         }
 

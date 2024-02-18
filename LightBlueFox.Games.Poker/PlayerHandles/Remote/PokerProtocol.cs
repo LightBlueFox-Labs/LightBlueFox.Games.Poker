@@ -52,9 +52,10 @@ namespace LightBlueFox.Games.Poker.PlayerHandles.Remote
             public int BetAmount;
             public bool WasBlind;
 
-            public int CurrentStake;
+            public PotInfo[] Pots;
+
+            public int TotalStake;
             public int MinBet;
-            public int Pot;
         }
 
         [Message]

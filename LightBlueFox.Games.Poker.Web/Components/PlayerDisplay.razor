@@ -1,0 +1,179 @@
+﻿
+@code {
+	[Parameter]
+	public PlayerInfo Player { get; set; }
+
+	[Parameter]
+	public bool DisplayCards { get; set; }
+
+	[Parameter]
+	public Card[]? Cards { get; set; } = null;
+
+	[Parameter]
+	public bool IsTurn { get; set; } = false;
+
+	[Parameter]
+	public int? Index { get; set; }
+
+	[Parameter]
+	public PotInfo[]? Pots { get; set; } = null;
+
+	[Parameter]
+	public bool PotsCollapsed { get; set; } = false;
+
+	private string getBtnPath()
+	{
+		if ((Player.Role & PlayerRole.Button) == PlayerRole.Button)
+		{
+			return "dealer.svg";
+		}
+		else if ((Player.Role & PlayerRole.SmallBlind) == PlayerRole.SmallBlind)
+		{
+			return "sb.svg";
+		}
+		else if ((Player.Role & PlayerRole.BigBlind) == PlayerRole.BigBlind)
+		{
+			return "bb.svg";
+		}
+
+		return "";
+	}
+}
+
+<style>
+	#player_you {
+		position: absolute;
+		bottom: 3%;
+		left: 55%;
+	}
+
+	.player_info {
+		z-index: 10;
+		display: inline-block;
+		border-radius: 5px;
+		background-color: white;
+	}
+
+	.player_info h2, .player_info p {
+		background-color: white;
+		border-radius: 5px 5px 0px 0px;
+	}
+
+	.player_info:not(#player_you) {
+		transform: translate(-50%, -50%)
+	}
+
+	.player_info h2 {
+		margin: 0px;
+		padding: 10px 60px 5px 25px;
+	}
+
+	.player_info .divider {
+		display: block;
+		width: 100%;
+		height: 0px;
+		border-top: 0.1px solid grey;
+	}
+
+	.player_info p {
+		margin: 0px;
+		padding: 5px 60px 10px 25px;
+	}
+
+	.folded h2 {
+		background-color: grey !important;
+	}
+
+	.player_info .button {
+		position: absolute;
+		padding: 10px;
+		transform: scale(0.3) translate(100%, -110%);
+		right: 0%;
+	}
+
+	.stakeDisplay {
+		position: absolute;
+		display: table;
+		table-layout: fixed;
+		top: 50%;
+		right: 0%;
+		transform: translate(120%, -50%);
+		background: black;
+		color: white;
+		border-radius: 5px;
+	}
+
+	.stakeDisplay span{
+		display: table-cell;
+		padding: 10px;
+	}
+	
+	.cardz {
+		position: relative;
+	}
+
+	.otherPlayerCard {
+		position: absolute;
+		z-index: -50;
+	}
+
+	.folded object:not(.button) {
+		filter: saturate(0%) contrast(40%);
+	}
+
+	.otherPlayerCard:nth-child(1) {
+		transform: scale(0.3) translate( 20%, -160%) rotate(7deg) !important;
+		z-index: -49;
+	}
+
+	.otherPlayerCard:not(.otherPlayerCard:nth-child(1)) {
+		transform: scale(0.3) translate( -30%, -160%) rotate(-7deg) !important;
+	}
+
+	.doesTurn h2{
+		background: lightgreen;
+	}
+</style>
+
+<div class="player_info @(IsTurn ? "doesTurn" : "") @(Player.Status == PlayerStatus.Folded ? "folded" : "")" id="player_@(Index == null ? "you" : Index)">
+	@if (DisplayCards == true && Player.Status != PlayerStatus.NotPlaying)
+	{
+		
+		<div class="cardz">
+			@if (Cards != null)
+			{
+				<CardRender Class="otherPlayerCard" Value="Cards[0].Value" Suit="Cards[0].Suit" />
+				<CardRender Class="otherPlayerCard" Value="Cards[1].Value" Suit="Cards[1].Suit" />
+			}
+			else
+			{
+				<CardRender Class="otherPlayerCard" />
+				<CardRender Class="otherPlayerCard" />
+			}
+		</div>
+	}
+	<object class="button" style="@(Player.Role == PlayerRole.None ? "display: none" : "display: inline-block")" data="/resc/buttons/@(getBtnPath())" type="image/svg+xml" />
+	<h2>@Player.Name @(Index == null ? "(YOU)" : "")</h2>
+	<span class="divider" />
+	<p>@Player.Stack in Chips</p>
+	@if (Player.CurrentStake > 0)
+	{
+		<div class="stakeDisplay">
+			@if(Pots != null && Pots.Length > 1 && !PotsCollapsed)
+			{
+				for(int i = 0; i < Pots.Length; i++)
+				{
+					@if (Pots[Pots.Length-(i+1)].IsPlaying(Player))
+					{
+						<div style="display: table-row">
+							<span class="pot_@i">@(i == 0 ? "Current Pot" : "Side pot " + i): @(Math.Clamp(Player.CurrentStake - Pots[Pots.Length - (i + 1)].StakeOffset, 0, Pots[Pots.Length - (i + 1)].MaxPotStake))</span>
+						</div>
+					}
+				}
+			}
+			<div style="display: table-row">
+				<span>Total Bet: @Player.CurrentStake</span>
+			</div>
+		</div>
+	}
+</div>

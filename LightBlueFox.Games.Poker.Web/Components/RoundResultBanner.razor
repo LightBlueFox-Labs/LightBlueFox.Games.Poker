@@ -1,0 +1,115 @@
+﻿<h3>RoundResultBanner</h3>
+
+@code {
+	[Parameter]
+	public Action? NextRound { get; set; } 
+
+	[Parameter]
+	public RoundResult? Result { get; set; }
+
+	private void roundEndContinue()
+	{
+		NextRound?.Invoke();
+	}
+}
+
+<style>
+	#gameEnd {
+		position: absolute;
+		padding: 30px;
+		background: #f2f2f2;
+		z-index: 1;
+		text-align: center;
+		border-top: 10px solid #a83a32;
+		border-bottom: 10px solid #a83a32;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+	}
+
+		#gameEnd .winner span {
+			color: green;
+		}
+
+		#gameEnd .loser span {
+			color: red;
+		}
+
+		#gameEnd button {
+			background: royalblue;
+			color: white;
+			padding: 15px;
+			border-radius: 5px;
+			border: none;
+			font-size: 20px;
+			margin-top: 30px;
+			transition: 0.3s;
+		}
+
+			#gameEnd button:hover {
+				background: #1b53cc;
+			}
+
+	.minicard {
+		width: 60px;
+	}
+</style>
+
+@if(Result != null){
+	<div id="gameEnd">
+		<h1 tabindex="-1">--- Round Ended ---</h1>
+		<div class="minitable">
+			@foreach (var card in Result.TableCards ?? new LightBlueFox.Games.Poker.Card[] { })
+			{
+				<CardRender Class="minicard" Value="@card.Value" Suit="@card.Suit"></CardRender>
+			}
+		</div>
+		@if (Result.PotResults.Length == 1)
+		{
+			@foreach (var playerInfo in Result.PotResults[0].PlayerInfos)
+			{
+
+				@if (playerInfo.HasWon)
+				{
+					<div class="winner">
+						<p>@playerInfo.Player.Name won <span>+@(playerInfo.ReceivedCoins - playerInfo.Player.CurrentStake)</span>  (@(playerInfo.Eval.Length > 0 ? ("with " + playerInfo.Eval[0].HandType + "") : "all others folded"))</p>
+					</div>
+				}
+				else
+				{
+					<div class="loser">
+						<p>@playerInfo.Player.Name lost <span>-@playerInfo.Player.CurrentStake</span> (@(playerInfo.Eval.Length == 0 || playerInfo.HasFolded ? "folded" : playerInfo.Eval[0].HandType))</p>
+					</div>
+				}
+
+			}
+		}
+		else
+		{
+			@for (int i = Result.PotResults.Length - 1; i >= 0; i--)
+			{
+				<h1 class="pot_@i">Pot @i</h1>
+				@foreach (var playerInfo in Result.PotResults[i].PlayerInfos)
+				{
+
+					@if (playerInfo.HasWon)
+					{
+						<div class="winner">
+							<p>@playerInfo.Player.Name won <span>+@(playerInfo.ReceivedCoins - (Result.PotResults[i].Pot.Stake))</span>  (@(playerInfo.Eval.Length > 0 ? ("with " + playerInfo.Eval[0].HandType + "") : "all others folded"))</p>
+						</div>
+					}
+					else
+					{
+						<div class="loser">
+							<p>@playerInfo.Player.Name lost <span>-@(Result.PotResults[i].Pot.Stake)</span> (@(playerInfo.Eval.Length == 0 || playerInfo.HasFolded ? "folded" : playerInfo.Eval[0].HandType))</p>
+						</div>
+					}
+
+				}
+			}
+		}
+
+
+		<button @onclick="roundEndContinue">Continue</button>
+	</div>
+}

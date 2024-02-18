@@ -1,0 +1,64 @@
+﻿@code {
+	[Parameter]
+	public PotInfo[]? Pots { get; set; } = null;
+	[Parameter]
+	public bool IsCollapsed { get; set; }
+
+	[Parameter]
+	public int MinBet { get; set; }
+}
+
+<style>
+	#tableInfoContainer{
+
+		bottom: -10%;
+		width: 90%;
+		margin-left: calc(5% - 15px);
+		background: white;
+		display: table;
+		table-layout: fixed;
+		border-radius: 5px;
+		transition: 0.4s;
+	}
+
+	.pot-info {
+		display: table-row;
+	}
+
+	.pot-info p {
+		padding: 15px;
+		display: table-cell;
+	}
+
+	.total-pots{
+		border-top: 1px solid grey;
+	}
+</style>
+
+
+@if(Pots != null)
+{
+	<div id="tableInfoContainer">
+		@if (Pots.Length > 1 && !IsCollapsed)
+		{
+			@for (int i = 0; i < Pots.Length; i++)
+			{
+				<div class="pot-info pot_@i">
+					<p>@(i == 0 ? "Current Pot" : "Side Pot " + i) : @Pots[Pots.Length-(i+1)].TotalPot</p>
+					<p>Pot Stakes: @Pots[Pots.Length-(i+1)].Stake</p>
+					<p>Nr of Players: @Pots[Pots.Length-(i+1)].PlayersInvolved.Length</p>
+				</div>
+			}
+		}
+		<div class="pot-info @((Pots.Length > 1 && !IsCollapsed) ? "total-pots" : "")">
+			<p>Total Pot: @Pots.GetTotalPot()</p>
+			<p>Min Bet: @MinBet</p>
+			<p>Current Stakes: @(string.Join("/", Pots.Select<PotInfo, string>((p) => (p.Stake + p.StakeOffset).ToString())))</p>
+		</div>
+	</div>
+}
+else
+{
+	<!-- is null -->
+}
+

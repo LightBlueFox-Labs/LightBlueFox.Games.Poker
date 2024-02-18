@@ -87,27 +87,34 @@ namespace LightBlueFox.Games.Poker.Web.Controllers
 				View.Log(" [{0}] {1}", i, actions[i].Info(CurrentGameStake - Player.CurrentStake));
 			}
 
-			var res = View.DoTurn(actions);
+			var res = View.DoTurn(actions, MaxBet);
 			View.Log($"You chose: {res.ActionType} (bet: {res.BetAmount}");
 			return res;
 		}
 
-		protected override void PlayerPlacedBet(PlayerInfo player, int amount, bool wasBlind, int newMinBet, int currentStake, int currentPot)
+		protected override void PlayerPlacedBet(PlayerInfo player, int amount, bool wasBlind, int newMinBet, int totalStake, PotInfo[] pots)
 		{
-			View.Log($"[{Player}]: {player} bet {amount} {(wasBlind ? "(blind)" : "")}. Current Stakes: {currentStake}. Current Pot {currentPot}. New MinBet: {newMinBet}");
-			View.CurrentStakes = currentStake;
-			View.Pot = currentPot;
+			View.Log($"[{Player}]: {player} bet {amount} {(wasBlind ? "(blind)" : "")}. Current Stakes: {totalStake}. Current Pot {0}. New MinBet: {newMinBet}");
+			View.Pots = pots;
 			View.MinBet = newMinBet;
 			View.UpdatePlayerInfo(player);
 		}
 
 		protected override void RoundEnded(RoundResult res)
 		{
-			View.roundEnd = res;
-			View.Log("[{0}]: Round ended. Pot was {1}", Player.Name, CurrentPot);
-			foreach (var i in res.PlayerInfos)
+			foreach (var item in res.Summaries)
 			{
-				View.Log($"     [{i.Player.Name}{(i.Player.Name == Player.Name ? " (YOU)" : "")}] {(i.HasWon ? "won (+" + (i.ReceivedCoins - i.Player.CurrentStake) : "lost (-" + i.Player.CurrentStake)} coins). {(i.CardsVisible ? "Cards: " + PrintCardCollection(i.Cards) : "")}{(i.Eval.Length == 1 ? ", eval: " + i.Eval[0] : "")}");
+				View.UpdatePlayerInfo(item.Player, true);
+			}
+			View.roundEnd = res;
+			foreach (var pot in res.PotResults)
+			{
+				View.Log("[{0}]: (Side)pot: {1}", Player.Name, pot.Pot.TotalPot);
+				foreach (var i in pot.PlayerInfos)
+				{
+					View.Log($"     [{i.Player.Name}{(i.Player.Name == Player.Name ? " (YOU)" : "")}] {(i.HasWon ? "won (+" + (i.ReceivedCoins - i.Player.CurrentStake) : "lost (-" + i.Player.CurrentStake)} coins). {(i.CardsVisible ? "Cards: " + PrintCardCollection(i.Cards) : "")}{(i.Eval.Length == 1 ? ", eval: " + i.Eval[0] : "")}");
+				}
+
 			}
 			View.Log("------------- ROUND END -----------\n\n");
 		}
@@ -123,6 +130,9 @@ namespace LightBlueFox.Games.Poker.Web.Controllers
 			{
 				return p.Name != this.Player.Name;
 			}).ToArray();
+
+			View.Pots = CurrentPots;
+
 			View.MyCards = cards;
 			View.Rerender();
 		}

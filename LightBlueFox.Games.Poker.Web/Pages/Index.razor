@@ -51,7 +51,7 @@
 		display: inline-block;
 		border-radius: 5px;
 		padding: 15px 50px;
-		width: 80vw;
+		width: 75vw;
 		height: 60vh;
 		position: absolute;
 		top: 50%;
@@ -59,12 +59,13 @@
 		transform: translate(-50%, -50%);
 		align-content: center;
 		max-width: 60vh;
+		max-height: 60vw;
 	}
 
 	.menu * {
 		width: 100%;
 		text-align: center;
-		font-size: 2vw;
+		font-size: 30px;
 		margin-top: 15px;
 		margin-bottom: 15px;
 	}
@@ -199,24 +200,24 @@
 	<div class="error" style="visibility: @isErrorVisible">
 		Error: @errorMsg
 	</div>
-	<h1 style="font-size: 3vw">Online Poker Game</h1>
+	<h1 style="font-size: 50px">Online Poker Game</h1>
 	<p>Your Name: </p>
 	<Microsoft.AspNetCore.Components.Forms.InputText @bind-Value="name" @oninput="((e) => name = e.Value?.ToString() ?? string.Empty)" type="text" name="name"/>
 	<button disabled="@(string.IsNullOrEmpty(name))" @onclick="joinGame">Join Game</button>
 </div>
 
 
-<Card Class="card b1"></Card>
-<Card Class="card b2"></Card>
+<CardRender Class="card b1"></CardRender>
+<CardRender Class="card b2"></CardRender>
 
 @for(int i = 0; i < 2; i++)
 {
-	<Card Class="@("card h"+i)" Suit="hand[i].Suit" Value="hand[i].Value"></Card>
+	<CardRender Class="@("card h"+i)" Suit="hand[i].Suit" Value="hand[i].Value"></CardRender>
 }
 
 @for(int i = 0; i < 5; i++)
 {
-	<Card Class="@("table t"+i)" Suit="table[i].Suit" Value="table[i].Value"></Card>
+	<CardRender Class="@("table t"+i)" Suit="table[i].Suit" Value="table[i].Value"></CardRender>
 } 
 
 

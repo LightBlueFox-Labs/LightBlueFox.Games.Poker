@@ -74,7 +74,10 @@ public class HandTests
                 new object[]{"5S3C", "5D4H", "5C4S3HQHJD", -1, PokerHands.TwoPair, PokerHands.TwoPair},
                 new object[]{"AHQS", "QDQH", "ASADQC4C2S", 1, PokerHands.FullHouse, PokerHands.FullHouse},
                 new object[]{"3S5H", "6H2S", "6D5C3C2CKH", -1, PokerHands.TwoPair, PokerHands.TwoPair},
-                new object[]{"AH2S", "2D6H", "3S4D5HKDKH", -1, PokerHands.Straight, PokerHands.Straight}
+                new object[]{"AH2S", "2D6H", "3S4D5HKDKH", -1, PokerHands.Straight, PokerHands.Straight},
+                new object[]{"AH3D", "9D3S", "KSQDJCTS2D", 1, PokerHands.Straight, PokerHands.Straight },
+                new object[]{"KSJD", "4S5D", "2H2D7C7D7S", 0, PokerHands.FullHouse, PokerHands.FullHouse},
+                new object[] { "KS2D", "QSJD", "TSTD3H5C9C", 1, PokerHands.Pair, PokerHands.Pair},
             });
         }
     }

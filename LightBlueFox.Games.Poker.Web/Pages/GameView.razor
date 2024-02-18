@@ -52,8 +52,9 @@
 	}
 
 	public int MinBet {get;set;} = 0;
-	public int Pot {get; set;} = 0;
-	public int CurrentStakes {get;set;} = 0;
+	public int MaxBet { get; set; } = 0;
+
+	public PotInfo[]? Pots { get; set; }
 
 	public PlayerInfo? WhoseTurn;
 
@@ -74,25 +75,6 @@
 		base.OnAfterRender(firstRender);
 	}
 
-	// TODO: There could be situations where a player fills more than one role! (eg with 2 players)
-	private string getBtnOrNone(PlayerInfo p)
-	{
-		if((p.Role & PlayerRole.Button) == PlayerRole.Button )
-		{
-			return "dealer.svg";
-		}
-		else if ((p.Role & PlayerRole.SmallBlind) == PlayerRole.SmallBlind)
-		{
-			return "sb.svg";
-		}
-		else if ((p.Role & PlayerRole.BigBlind) == PlayerRole.BigBlind)
-		{
-			return "bb.svg";
-		}
-
-		return "";
-	}
-
 	public void Log(string str, params object[] args)
 	{
 		JSRuntime.InvokeVoidAsync("console.log", string.Format(str, args));
@@ -101,9 +83,14 @@
 
 	private TaskCompletionSource<ActionInfo>? waitingForPlayerAction;
 	private PokerAction[] actions = { };
-	public ActionInfo DoTurn(PokerAction[] act)
+
+
+	public ActionInfo DoTurn(PokerAction[] act, int? maxBet)
 	{
+
+
 		betAmnt = MinBet;
+		MaxBet = maxBet ?? -1;
 		waitingForPlayerAction = new();
 		actions = act;
 		Rerender();
@@ -141,69 +128,24 @@
 		waitingForPlayerAction?.SetResult(new()
 			{
 				ActionType = PokerAction.Raise,
-				BetAmount = amnt + (CurrentStakes - MyPlayer.CurrentStake),
+				BetAmount = amnt + (Controller?.LevelAmnt ?? 0),
 			});
 	}
 
-	public void UpdatePlayerInfo(PlayerInfo inf)
+	public void UpdatePlayerInfo(PlayerInfo inf, bool suppressUpdate = false)
 	{
 		for (int i = 0; i < OtherPlayers.Length; i++)
 		{
 			if (OtherPlayers[i].Name == inf.Name) OtherPlayers[i] = inf;
 		}
-		Rerender();
+		if(!suppressUpdate) Rerender();
 	}
 
 	public GameInfo GameInfo { get; set; }
 
 	public RoundResult? roundEnd { get; set; } = null;
 
-	/*private RoundResult? FakeResult = new RoundResult()
-		{
-			Pot = 300,
-			TableCards = new LightBlueFox.Games.Poker.Card[] { new("4H"), new("5S"), new("AC"), new("KS"), new("2D"), },
-			PlayerInfos = new RoundEndPlayerInfo[]
-				{
-				new()
-				{
-					Player = new("Player 1", 4000),
-					ReceivedCoins = 300,
-					Eval = new LightBlueFox.Games.Poker.Utils.EvalResult[]
-	{
-						new()
-						{
-							HandType = LightBlueFox.Games.Poker.Utils.PokerHands.ThreeOfAKind,
-							MainCards = new LightBlueFox.Games.Poker.Card[] { new("4H"), new("4S"), new("4D")},
-							RemainingCards = new LightBlueFox.Games.Poker.Card[] { new("5S"), new("AC"), new("KS"), new("2D")},
-						}
-	},
-					HasFolded = false,
-					HasWon = true,
-					Cards = new LightBlueFox.Games.Poker.Card[] { new("4S"), new("4D")},
-					CardsVisible = true
-				},
-				new()
-				{
-					Player = new("Player 2", 4000),
-					ReceivedCoins = 0,
-					Eval = new LightBlueFox.Games.Poker.Utils.EvalResult[]
-	{
-						new()
-						{
-							HandType = LightBlueFox.Games.Poker.Utils.PokerHands.TwoPair,
-							MainCards = new LightBlueFox.Games.Poker.Card[] { new("4H"), new("4C"), new("KS"), new("KD")},
-							RemainingCards = new LightBlueFox.Games.Poker.Card[] { new("5S"), new("AC"), new("2D")},
-						}
-	},
-					HasFolded = false,
-					HasWon = false,
-					Cards = new LightBlueFox.Games.Poker.Card[] { new("4C"), new("KD")},
-					CardsVisible = true
-				}
-			}
-		};*/
-
-	private void roundEndContinue(EventArgs e)
+	private void roundEndContinue()
 	{
 		roundEnd = null;
 		IsRoundRunning = false;
@@ -218,9 +160,13 @@
 }
 
 
-
+<link href="/css/quickndirty.css" type="text/css" rel="stylesheet"/>
 
 <style>
+
+	
+
+
 	html{
 		background-color: darkgreen;
 		overflow: hidden;
@@ -254,88 +200,7 @@
 		transform: scale(1.1) translate(-10%, 50%) rotate(-7deg) !important;
 		z-index: 8;
 	}
-
-	.you{
-		position: absolute;
-		bottom: 3%;
-		left: 55%;
-	}
-
-	.player_info{
-		z-index: 10;
-		display: inline-block;
-		border-radius: 5px;
-		background-color: white;
-	}
-
-	.player_info h2, .player_info p{
-			background-color: white;
-			border-radius: 5px 5px 0px 0px;
-	}
-	.player_info:not(.you){
-		transform: translate(-50%, -50%)
-	}
-
-	.player_info h2{
-		margin: 0px;
-		padding: 10px 60px 5px 25px;
-		
-	}
-	.player_info .divider{
-		display:block;
-		width:100%;
-		height:0px;
-		border-top: 0.1px solid grey;
-	}
-	.player_info p{
-		margin: 0px;
-		padding: 5px 60px 10px 25px;
-	}
-
-	.folded h2{
-		background-color: grey !important;
-	}
-
-	.player_info .button{
-		position: absolute;
-		padding: 10px;
-		transform: scale(0.3) translate(100%, -110%);
-		right: 0%;
-	}
-
-	.stakeDisplay {
-		position: absolute;
-		top: 50%;
-		right: 0%;
-		padding: 10px;
-		transform: translate(120%, -50%);
-		background: black;
-		color: white;
-		border-radius: 5px;
-	}
 	
-	.cardz {
-		position: relative;
-	}
-
-	.otherPlayerCard {
-		position: absolute;
-		z-index: -50;
-	}
-
-	.folded object:not(.button) {
-		filter: saturate(0%) contrast(40%);
-	}
-	.otherPlayerCard:nth-child(1){
-		transform: scale(0.3) translate( 20%, -160%) rotate(7deg) !important;
-		z-index: -49;
-	}
-
-	.otherPlayerCard:not(.otherPlayerCard:nth-child(1)) {
-		
-		transform: scale(0.3) translate( -30%, -160%) rotate(-7deg) !important;
-	}
-
 	.tableCards{
 		position: absolute;
 		top: 50%;
@@ -401,6 +266,7 @@
 		left:50%;
 		border-radius: 10px 10px 5px 5px;
 		transform: translate(-50%,0%);
+		z-index: 1000;
 	}
 
 	#actionTable{
@@ -531,48 +397,15 @@
 		background: #32a844;
 	}
 
-	#gameEnd {
-		position: absolute;
-		padding: 30px;
-		background: #f2f2f2;
-		z-index: 1;
-		text-align: center;
-		border-top: 10px solid #a83a32;
-		border-bottom: 10px solid #a83a32;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-	}
-
-	#gameEnd .winner span{
-		color: green;
-	}
-
-	#gameEnd .loser span {
-		color: red;
-	}
-	#gameEnd button{
-		background: royalblue;
-		color: white;
-		padding: 15px;
-		border-radius: 5px;
-		border: none;
-		font-size: 20px;
-		margin-top: 30px;
-		transition: 0.3s;
-	}
-
-	#gameEnd button:hover {
-				background: #1b53cc;
-	}
-
-	.minicard{
-		width: 60px;
-	}
+	
 </style>
+
+
 
 <script>
 	function adjustPlayerPos(playerIndex, playerCount, first) {
+		var p = document.getElementById("player_" + playerIndex);
+		if (p == null) return;
 
 		var rect = document.getElementById("__ellipse").getBoundingClientRect();
 		var step = (2 * Math.PI / ( playerCount + 1 ));
@@ -580,7 +413,7 @@
 
 		
 
-		var p = document.getElementById("player_" + playerIndex);
+		
 		var x = (rect.width / 2) * Math.cos(angle) + (window.innerWidth / 2);
 		var y = (rect.height / 2) * Math.sin(angle) + (window.innerHeight / 2);
 		
@@ -602,32 +435,6 @@
 	<p>Loading...</p>
 </div>
 
-<div id="gameEnd" style="@(roundEnd == null ? "display: none" : "")">
-	<h1 tabindex="-1">--- Round Ended ---</h1>
-	<div class="minitable">
-		@foreach (var card in roundEnd?.TableCards ?? new LightBlueFox.Games.Poker.Card[] { })
-		{
-			<Card Class="minicard" Value="@card.Value" Suit="@card.Suit"></Card>
-		}
-	</div>
-	@foreach (var playerInfo in roundEnd?.PlayerInfos ?? new RoundEndPlayerInfo[] { }/*roundEnd == null ? new RoundEndPlayerInfo[]{} : roundEnd.PlayerInfos*/)
-	{
-		@if (playerInfo.HasWon)
-		{
-			<div class="winner">
-				<p>@playerInfo.Player.Name won <span>+@(playerInfo.ReceivedCoins - playerInfo.Player.CurrentStake)</span>  (@(playerInfo.Eval.Length > 0 ? ("with " + playerInfo.Eval[0].HandType + "") : "all others folded"))</p>
-			</div>
-		}
-		else
-		{
-			<div class="loser">
-				<p>@playerInfo.Player.Name lost <span>-@playerInfo.Player.CurrentStake</span> (@(playerInfo.Eval.Length == 0 || playerInfo.HasFolded ? "folded" : playerInfo.Eval[0].HandType))</p>
-			</div>
-		}
-
-	}
-	<button @onclick="roundEndContinue">Continue</button>
-</div>
 
 @if (waitingForPlayerAction != null)
 {
@@ -641,11 +448,11 @@
 		{
 			<div id="betInput">
 				<div id="sliderDiv">
-					<input @oninput="((e)=> betAmnt = int.Parse((string)e.Value))" type="range" step="5" min="@MinBet" max="@(MyPlayer.Stack - (CurrentStakes - @MyPlayer.CurrentStake))" value="@MinBet" />
+					<input @oninput="((e)=> betAmnt = int.Parse((string)e.Value))" type="range" step="5" min="@MinBet" max="@MaxBet" value="@MinBet" />
 					<p class="betLabel" id="minBetLabel">@MinBet</p>
-					<p class="betLabel" id="maxBetLabel">@(MyPlayer.Stack - (CurrentStakes - @MyPlayer.CurrentStake))</p>
+					<p class="betLabel" id="maxBetLabel">@MaxBet</p>
 				</div>
-				<button @onclick="(e) => confirmBet(betAmnt)">Bet @betAmnt</button>
+				<button @onclick="(e) => confirmBet(betAmnt)">Bet @betAmnt @(Controller?.LevelAmnt != null ? "(+"  + Controller.LevelAmnt + ")": "")</button>
 			</div>
 		}
 		else
@@ -653,7 +460,7 @@
 			<div id="actionTable">
 				@foreach(var a in actions)
 				{
-					<button @onclick="(e) => playerDoesAction(a)">@a.ToString()</button>
+					<button @onclick="(e) => playerDoesAction(a)">@a.ToString() @(a == PokerAction.Call && Controller?.LevelAmnt != null ? "(" + Controller.LevelAmnt + ")" : "")</button>
 				}
 				
 			</div>
@@ -663,28 +470,26 @@
 
 @if(MyCards != null && MyCards.Length == 2)
 {
-	<Card Class="playerCard firstCard" Scale="1" Value="MyCards[0].Value" Suit="MyCards[0].Suit"></Card>
-	<Card Class="playerCard secondCard" Scale="1" Value="MyCards[1].Value" Suit="MyCards[1].Suit"></Card>
+	<CardRender Class="playerCard firstCard" Scale="1" Value="MyCards[0].Value" Suit="MyCards[0].Suit"></CardRender>
+	<CardRender Class="playerCard secondCard" Scale="1" Value="MyCards[1].Value" Suit="MyCards[1].Suit"></CardRender>
 }
+
+<RoundResultBanner NextRound="roundEndContinue" Result="roundEnd"/>
 
 @if (IsRoundRunning)
 {
 	<div class="tableCards">
-		<div class="table-info">
-			<p>Current Pot: @Pot</p>
-			<p>Min Bet: @MinBet</p>
-			<p>Current Stakes: @CurrentStakes</p>
-		</div>
+		<PotInfoDisplay Pots="Pots" IsCollapsed=false MinBet="MinBet"/>
 		<div style="position: relative">
 			@for (int i = 0; i < 5; i++)
 			{
 				@if (TableCards.Length <= i)
 				{
-					<Card Style="@("position: absolute; left: " + (-2.5 + i * 20) + "%;")" Scale="0.8"></Card>
+					<CardRender Style="@("position: absolute; left: " + (-2.5 + i * 20) + "%;")" Scale="0.8"></CardRender>
 				}
 				else
 				{
-					<Card Style="@("position: absolute; left: " + (-2.5 + i * 20) + "%;")" Value="TableCards[i].Value" Suit="TableCards[i].Suit" Scale="0.8"></Card>
+					<CardRender Style="@("position: absolute; left: " + (-2.5 + i * 20) + "%;")" Value="TableCards[i].Value" Suit="TableCards[i].Suit" Scale="0.8"></CardRender>
 				}
 			}
 		</div>
@@ -712,47 +517,13 @@ else
 <div id="players">
 	@foreach (var p in OtherPlayers)
 	{
-		<div class="player_info @(WhoseTurn != null && WhoseTurn.Value.Name == p.Name ? "doesTurn" : "") @(p.Status == PlayerStatus.Folded ? "folded" : "")" id="player_@(Array.IndexOf(OtherPlayers, p))">
-			@if(p.Status != PlayerStatus.NotPlaying)
-			{
-				<div class="cardz">
-					@if(IsRoundRunning && roundEnd != null && roundEnd.PlayerInfos.Where((pi) => pi.Player.Name == p.Name) is var pi && pi.Count() > 0 && pi.First().CardsVisible && pi.First().Cards.Length == 2){
-						<Card Class="otherPlayerCard" Value="pi.First().Cards[0].Value" Suit="pi.First().Cards[0].Suit"/>
-						<Card Class="otherPlayerCard" Value="pi.First().Cards[1].Value" Suit="pi.First().Cards[1].Suit" />
-					}
-					else
-					{
-						<Card Class="otherPlayerCard" />
-						<Card Class="otherPlayerCard" />	
-					}
-					
-					<object class="button" style="display: @(String.IsNullOrEmpty(getBtnOrNone(p)) ? "none" : "inline-block")" data="/resc/buttons/@(getBtnOrNone(p))" type="image/svg+xml" />
-				</div>
-			}
-			<h2>@p.Name</h2>
-			<span class="divider"/>
-			<p>@p.Stack in Chips</p>
-			@if(p.CurrentStake > 0)
-			{
-				<div class="stakeDisplay">
-					<span>Bet: @p.CurrentStake</span>
-				</div>
-			}
-		</div>
+		<PlayerDisplay Player="p" 
+					DisplayCards=true 
+					IsTurn="(WhoseTurn != null && WhoseTurn.Value.Name == p.Name)" 
+					Cards="(IsRoundRunning && roundEnd != null && roundEnd.Summaries.Where((pi) => pi.Player.Name == p.Name) is var pi && pi.Count() > 0 && pi.First().CardsVisible && pi.First().Cards.Length == 2) ? pi.First().Cards : null" 
+					Index="Array.IndexOf(OtherPlayers, p)"
+					Pots="Pots"/>
 	}
 </div>
 
-<div class="player_info you @(WhoseTurn != null && WhoseTurn.Value.Name == PlayerName ? "doesTurn" : "") @(MyPlayer.Status == PlayerStatus.Folded ? "folded" : "")">
-	<object class="button" style="display: @(String.IsNullOrEmpty(getBtnOrNone(MyPlayer)) ? "none" : "inline-block")" data="/resc/buttons/@(getBtnOrNone(MyPlayer))" type="image/svg+xml" />
-	<h2>@PlayerName (YOU)</h2>
-		<span class="divider" />
-		
-		<p>@MyPlayer.Stack in chips</p>
-		@if(MyPlayer.CurrentStake > 0)
-		{
-			<div class="stakeDisplay">
-				<span>Bet: @MyPlayer.CurrentStake</span>
-			</div>
-		}
-	
-	</div>
+<PlayerDisplay Player="MyPlayer" DisplayCards=false IsTurn="(WhoseTurn != null && WhoseTurn.Value.Name == PlayerName)" Pots="Pots" Index="null"/>

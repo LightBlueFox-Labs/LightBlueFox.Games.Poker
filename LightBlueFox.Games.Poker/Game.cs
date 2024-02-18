@@ -1,5 +1,6 @@
 ﻿using LightBlueFox.Connect.CustomProtocol.Protocol;
 using LightBlueFox.Games.Poker.PlayerHandles;
+using LightBlueFox.Games.Poker.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,7 +38,7 @@ namespace LightBlueFox.Games.Poker
                     BigBlind = BigBlind,
                     SmallBlind = SmallBlind,
                     GameState = State,
-                    Players = Array.ConvertAll<PlayerHandle, PlayerInfo>(Players.ToArray(), (p) => p),
+                    Players = players.ToInfo(),
                 };
             }
         }
@@ -58,7 +59,7 @@ namespace LightBlueFox.Games.Poker
             else
             {
 				players.Add(p);
-				p.Stack = 5000;
+				p.Stack = 1000;
                 p.TellGameInfo(Info);
 			}
 
@@ -123,7 +124,7 @@ namespace LightBlueFox.Games.Poker
                 GameState = game.State,
                 BigBlind = game.BigBlind,
                 SmallBlind = game.SmallBlind,
-                Players = Array.ConvertAll<PlayerHandle, PlayerInfo>(game.Players.ToArray(), (p) => p),
+                Players = game.Players.ToInfo(),
                 ID = game.ID,
             });
         }

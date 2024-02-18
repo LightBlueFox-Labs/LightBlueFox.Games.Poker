@@ -58,7 +58,7 @@ namespace LightBlueFox.Games.Poker.Utils
             if (mainComp != 0) return mainComp;
 
             return CompareKickers(e1, e2);
-        }
+		}
 
         private static int CompareStraights(EvalResult e1, EvalResult e2)
         {
@@ -163,15 +163,15 @@ namespace LightBlueFox.Games.Poker.Utils
 
 
         public static Card GetHighest(this List<Card> cards) => cards.OrderByDescending(c => c).Take(1).ToArray().First();
-        
+
 		public static Card GetHighest(this Card[] cards) => cards.OrderByDescending(c => c).Take(1).ToArray().First();
 
 		public static Card[] GetHighest(this List<Card> cards, int count) => count == 0 ? new Card[0] : cards.OrderByDescending(c => c).Take(count).ToArray();
 
 		public static Card[] GetHighest(this Card[] cards, int count) => count == 0 ? new Card[0] : cards.OrderByDescending(c => c).Take(count).ToArray();
-        
 
-        public static HalfResult? FindPairCombos(List<Card>[] valueCounts)
+
+		public static HalfResult? FindPairCombos(List<Card>[] valueCounts)
         {
             valueCounts = valueCounts.OrderByDescending<List<Card>, int>(x => x == null ? 0 : x.Count).ThenByDescending(cc => cc == null ? 0 : (int)cc.GetHighest().Value).ToArray();
 
@@ -257,6 +257,23 @@ namespace LightBlueFox.Games.Poker.Utils
         }
         #endregion
 
+
+        public static RoundEndPotInfo[] EvaluateAllPots(PotInfo[] pots, Card[] tableCards, PlayerHandle[] players)
+        {
+            List<RoundEndPotInfo> res = new();
+            foreach (var pot in pots)
+            {
+                var relevantPlayers = players.Where((p) => pot.IsPlaying(p)).ToArray();
+                var pis = FindBestHands(relevantPlayers, tableCards, pot.TotalPot);
+                res.Add(new()
+                {
+                    PlayerInfos = pis,
+                    Pot = pot,
+                });
+            }
+            return res.ToArray();
+        }
+
         public static RoundEndPlayerInfo[] FindBestHands(PlayerHandle[] players, Card[] tableCards, int Pot)
         {
             var notFolded = players.Where((p) => p.Status != PlayerStatus.Folded).ToList();
@@ -310,7 +327,6 @@ namespace LightBlueFox.Games.Poker.Utils
             int winnings = Pot / bestPlayerHands.Count;
             foreach (var winner in bestPlayerHands)
             {
-                winner.Key.Stack += winnings;
                 var newRes = winner.Value;
                 newRes.ReceivedCoins = winnings;
                 bestPlayerHands[winner.Key] = newRes;
@@ -380,13 +396,7 @@ namespace LightBlueFox.Games.Poker.Utils
         RoyalFlush
     }
 
-    public static class PokerHandsExtensions
-    {
-        public static bool IsStraight(this PokerHands hand)
-        {
-            return (new PokerHands[] { PokerHands.Straight, PokerHands.StraightFlush }).Contains(hand);
-        }
-    }
+    
 
     public enum HandCompRes
     {

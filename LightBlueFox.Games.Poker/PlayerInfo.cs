@@ -1,7 +1,12 @@
 ﻿using LightBlueFox.Connect.CustomProtocol.Serialization.CompositeSerializers;
+using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("Tests.LightBlueFox.Games.Poker")]
 
 namespace LightBlueFox.Games.Poker
 {
+    
+
     [CompositeSerialize]
     public struct PlayerInfo: IEquatable<PlayerInfo>
     {

@@ -81,7 +81,7 @@ namespace LightBlueFox.Games.Poker.PlayerHandles.Remote
         [MessageHandler]
         public static void InformPlayerBetHandler(PlayerPlacedBet bet, MessageInfo inf)
         {
-            Receivers[inf.From].MyPlayer.PlayerBet(bet.Player, bet.BetAmount, bet.WasBlind, bet.MinBet, bet.CurrentStake, bet.Pot);
+            Receivers[inf.From].MyPlayer.PlayerBet(bet.Player, bet.BetAmount, bet.WasBlind, bet.MinBet, bet.TotalStake, bet.Pots);
         }
 
         [MessageHandler]
