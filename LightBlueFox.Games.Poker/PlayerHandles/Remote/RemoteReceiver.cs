@@ -30,7 +30,7 @@ namespace LightBlueFox.Games.Poker.PlayerHandles.Remote
                 var res = recv.MyPlayer.StartTurn(t.PossibleActions);
                 recv.Connection.WriteMessage<PerformAction>(new()
                 {
-                    TurnID = t.TurnID,
+                    Player = t.Player,
                     Action = res
                 });
             });
@@ -94,5 +94,21 @@ namespace LightBlueFox.Games.Poker.PlayerHandles.Remote
         {
             Receivers[inf.From].MyPlayer.PlayersTurn(pt);
         }
-    }
+
+        private static T[]? nullify<T>(T[] arr)
+        {
+            return arr.Length == 0 ? null : arr;
+        }
+
+        [MessageHandler]
+        public static void ReconnectInfoHandler(ReconnectInfo reconnectInfo, MessageInfo inf) {
+            Receivers[inf.From].MyPlayer.Reconnected(reconnectInfo.YourPlayer, nullify(reconnectInfo.YourCards), reconnectInfo.GameInfo, reconnectInfo.OtherPlayers, nullify(reconnectInfo.TableCards), nullify(reconnectInfo.Pots), reconnectInfo.CurrentMinBet);
+        }
+
+		[MessageHandler]
+		public static void SpectateInfoHandler(SpectateInfo spectateInfo, MessageInfo inf)
+		{
+			Receivers[inf.From].MyPlayer.StartSpectating(spectateInfo.YourPlayer, spectateInfo.GameInfo, spectateInfo.OtherPlayers, nullify(spectateInfo.TableCards), nullify(spectateInfo.Pots), spectateInfo.CurrentMinBet);
+		}
+	}
 }

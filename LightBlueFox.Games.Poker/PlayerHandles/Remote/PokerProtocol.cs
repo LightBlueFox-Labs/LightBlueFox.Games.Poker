@@ -16,8 +16,30 @@ namespace LightBlueFox.Games.Poker.PlayerHandles.Remote
             return new ProtocolDefinition(sl, types.ToArray());
         }
 
-
         [Message]
+        public struct ReconnectInfo
+        {
+            public PlayerInfo YourPlayer;
+            public Card[] YourCards;
+            public GameInfo GameInfo;
+            public PlayerInfo[] OtherPlayers;
+            public Card[] TableCards;
+            public PotInfo[] Pots;
+            public int CurrentMinBet;
+		}
+
+		[Message]
+		public struct SpectateInfo
+		{
+			public PlayerInfo YourPlayer;
+			public GameInfo GameInfo;
+			public PlayerInfo[] OtherPlayers;
+			public Card[] TableCards;
+			public PotInfo[] Pots;
+			public int CurrentMinBet;
+		}
+
+		[Message]
         public struct GameInfo
         {
             public string ID;
@@ -74,14 +96,14 @@ namespace LightBlueFox.Games.Poker.PlayerHandles.Remote
         public struct DoTurn
         {
             public PokerAction[] PossibleActions;
-            public uint TurnID;
+            public PlayerInfo Player;
         }
 
         [Message]
         public struct PerformAction
         {
             public ActionInfo Action;
-            public uint TurnID;
+            public PlayerInfo Player;
         }
 
         [Message]

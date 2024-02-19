@@ -1,4 +1,4 @@
-﻿
+﻿@page "/displaytest";
 @code {
 	[Parameter]
 	public PlayerInfo Player { get; set; }
@@ -54,7 +54,7 @@
 		background-color: white;
 	}
 
-	.player_info h2, .player_info p {
+	.player_info p {
 		background-color: white;
 		border-radius: 5px 5px 0px 0px;
 	}
@@ -82,6 +82,18 @@
 
 	.folded h2 {
 		background-color: grey !important;
+	}
+
+	.spectator {
+		opacity: 0.6;
+		background: black !important;
+		color: white;
+	}
+
+		.spectator h2, .spectator p, .spectator div {
+		border-radius: 5px 5px 0px 0px;
+		background: black !important;
+		color: white;
 	}
 
 	.player_info .button {
@@ -130,30 +142,46 @@
 		transform: scale(0.3) translate( -30%, -160%) rotate(-7deg) !important;
 	}
 
-	.doesTurn h2{
-		background: lightgreen;
+	
+
+	.disconnected{
+		opacity: 0.5;
+	}
+
+	
+
+	.upper_part_player_display{
+		position: relative;
+		background: white;
+		border-radius: 5px 5px 0px 0px;
+	}
+
+	.upper_part_player_display h2, object {
+		position: relative;
+		z-index: 1;
+
 	}
 </style>
 
-<div class="player_info @(IsTurn ? "doesTurn" : "") @(Player.Status == PlayerStatus.Folded ? "folded" : "")" id="player_@(Index == null ? "you" : Index)">
-	@if (DisplayCards == true && Player.Status != PlayerStatus.NotPlaying)
-	{
-		
-		<div class="cardz">
-			@if (Cards != null)
-			{
-				<CardRender Class="otherPlayerCard" Value="Cards[0].Value" Suit="Cards[0].Suit" />
-				<CardRender Class="otherPlayerCard" Value="Cards[1].Value" Suit="Cards[1].Suit" />
-			}
-			else
-			{
-				<CardRender Class="otherPlayerCard" />
-				<CardRender Class="otherPlayerCard" />
-			}
-		</div>
-	}
-	<object class="button" style="@(Player.Role == PlayerRole.None ? "display: none" : "display: inline-block")" data="/resc/buttons/@(getBtnPath())" type="image/svg+xml" />
-	<h2>@Player.Name @(Index == null ? "(YOU)" : "")</h2>
+<div class="player_info @(IsTurn ? "doesTurn" : "") @(Player.Status == PlayerStatus.Folded ? "folded" : "") @(Player.IsConnected ? "" : "disconnected") @(Player.Status == PlayerStatus.Spectating ? "spectator" : "")" id="player_@(Index == null ? "you" : Index)">
+	<div class="cardz" style="@(DisplayCards == true && Player.Status != PlayerStatus.NotPlaying ? "display: inline" : "display: none")">
+		@if (Cards != null)
+		{
+			<CardRender Class="otherPlayerCard" Value="Cards[0].Value" Suit="Cards[0].Suit" />
+			<CardRender Class="otherPlayerCard" Value="Cards[1].Value" Suit="Cards[1].Suit" />
+		}
+		else
+		{
+			<CardRender Class="otherPlayerCard" />
+			<CardRender Class="otherPlayerCard" />
+		}
+	</div>
+	<div class="upper_part_player_display">
+		<object class="button" style="@(Player.Role == PlayerRole.None ? "display: none" : "display: inline-block")" data="/resc/buttons/@(getBtnPath())" type="image/svg+xml" />
+		<h2>@Player.Name @(Index == null ? "(YOU)" : "")@(Player.Status == PlayerStatus.Spectating ? " [SPECTATOR]" : "")</h2>
+		<div class="player_bg" id="@(IsTurn ? "doesTurn_progressbar" : "")"></div>
+	</div>
+	
 	<span class="divider" />
 	<p>@Player.Stack in Chips</p>
 	@if (Player.CurrentStake > 0)

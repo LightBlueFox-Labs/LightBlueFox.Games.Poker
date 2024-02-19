@@ -20,10 +20,43 @@
 		base.OnInitialized();
 	}
 
+	private static int INSTANCE = 0;
+	private static Dictionary<int, GameView> viewsById = new();
+
+	[JSInvokable]
+	public static async void GameView_OnBeforeUnload(int instanceID)
+	{
+		if(viewsById.GetValueOrDefault(instanceID) is GameView view)
+		{
+			view.OnBeforeUnload();
+		}
+		else
+		{
+			throw new KeyNotFoundException("Trying to call event on unknown instance");
+		}
+	}
+
+	[JSInvokable]
+	public static async void GameView_OnUnload(int instanceID)
+	{
+		if (viewsById.GetValueOrDefault(instanceID) is GameView view)
+		{
+			view.OnUnload();
+		}
+		else
+		{
+			throw new KeyNotFoundException("Trying to call event on unknown instance");
+		}
+	}
+
+
 	protected override Task OnAfterRenderAsync(bool firstRender)
 	{
 		if (firstRender)
 		{
+			int id = INSTANCE++;
+			viewsById.Add(id, this);
+			JSRuntime.InvokeVoidAsync("addTLEventListeners", id);
 			Controller = new(this);
 			IsLoading = false;
 			InvokeAsync(() => StateHasChanged());
@@ -31,23 +64,47 @@
 		return base.OnAfterRenderAsync(firstRender);
 	}
 
+	public void OnBeforeUnload()
+	{
+		if(Controller != null)
+		{
+			Controller.Disconnect();
+		}
+	}
+
+	public void OnUnload()
+	{
+		Console.WriteLine("SDASD");
+	}
+
+
 	public bool IsRoundRunning { get; set; } = false;
-	public bool CanStartRound { get; set; } = false;
+	public bool CanStartRound
+	{
+		get
+		{
+			return Controller != null && Controller.CanStartRound;
+		}
+	}
+
 
 	public PlayerInfo MyPlayer;
+	public int MyIndex { get; set; }
 
 	private PlayerInfo[]? __players = null;
 	public PlayerInfo[] OtherPlayers { get { return __players ?? new PlayerInfo[] { }; } set { this.__players = value; rerenderPlayers(); } }
 
-	public LightBlueFox.Games.Poker.Card[] TableCards { get; set; } = { };
+	public Card[]? TableCards { get; set; } = { };
 
-	public LightBlueFox.Games.Poker.Card[]? MyCards { get; set; }
+	public Card[]? MyCards { get; set; }
 
 	private void rerenderPlayers(bool first = false)
 	{
 		for (int i = 0; i < OtherPlayers.Length; i++)
 		{
-			JSRuntime.InvokeVoidAsync("adjustPlayerPos", i, OtherPlayers.Length, first);
+			var posIndx = (i + MyIndex) % (OtherPlayers.Length);
+			var pIndx = OtherPlayers.Length - i - 1;
+			JSRuntime.InvokeVoidAsync("adjustPlayerPos", pIndx, posIndx, OtherPlayers.Length, first);
 		}
 	}
 
@@ -122,6 +179,14 @@
 		}
 	}
 
+	public void AbortTurn()
+	{
+		waitingForPlayerAction?.SetResult(new ActionInfo()
+			{
+				ActionType = PokerAction.Cancelled
+			});
+	}
+
 	private void confirmBet(int amnt)
 	{
 		betMode = false;
@@ -134,9 +199,14 @@
 
 	public void UpdatePlayerInfo(PlayerInfo inf, bool suppressUpdate = false)
 	{
+		if(inf.Name == MyPlayer.Name)
+		{
+			MyPlayer = inf;
+		}
 		for (int i = 0; i < OtherPlayers.Length; i++)
 		{
-			if (OtherPlayers[i].Name == inf.Name) OtherPlayers[i] = inf;
+			if (OtherPlayers[i].Name == inf.Name)
+				OtherPlayers[i] = inf;
 		}
 		if(!suppressUpdate) Rerender();
 	}
@@ -149,14 +219,36 @@
 	{
 		roundEnd = null;
 		IsRoundRunning = false;
-		CanStartRound = OtherPlayers.Length > 0;
+		MyCards = null;
+		Pots = null;
+		RemovePlayers((p) => !p.IsConnected);
 		for(int i = 0; i < OtherPlayers.Length; i++)
 		{
-			OtherPlayers[i] = new PlayerInfo(OtherPlayers[i].Name, OtherPlayers[i].Stack);
+			OtherPlayers[i].CurrentStake = 0;
+			OtherPlayers[i].Role = PlayerRole.None;
+			OtherPlayers[i].Status = PlayerStatus.NotPlaying;
 		}
+		MyPlayer.CurrentStake = 0;
+		MyPlayer.Role = PlayerRole.None;
+		MyPlayer.Status = PlayerStatus.NotPlaying;
 		Rerender();
 	}
 
+	public void RemovePlayers(Predicate<PlayerInfo> match)
+	{
+		if(IsRoundRunning) throw new InvalidOperationException("Cannot remove players while round is running");
+
+
+		var l = new List<PlayerInfo>(OtherPlayers);
+		l.RemoveAll(match);
+		OtherPlayers = l.ToArray();
+	}
+
+
+	public void StartTurnTimer(PlayerInfo player, int amnt)
+	{
+		JSRuntime.InvokeVoidAsync("animateTurnTimer", amnt);
+	}
 }
 
 
@@ -393,8 +485,14 @@
 		background: #1b66de;
 	}
 
-	.doesTurn h2{
-		background: #32a844;
+	#doesTurn_progressbar {
+		position: absolute;
+		width: 0%;
+		height: 100%;
+		left: 0px;
+		top: 0px;
+		background: #34eb55;
+		border-radius: 5px 5px 0px 0px;
 	}
 
 	
@@ -403,13 +501,13 @@
 
 
 <script>
-	function adjustPlayerPos(playerIndex, playerCount, first) {
+	function adjustPlayerPos(playerIndex, posIndex, playerCount, first) {
 		var p = document.getElementById("player_" + playerIndex);
 		if (p == null) return;
 
 		var rect = document.getElementById("__ellipse").getBoundingClientRect();
 		var step = (2 * Math.PI / ( playerCount + 1 ));
-		var angle = - step * (playerIndex + 1) + Math.PI / 2;
+		var angle = - step * (posIndex + 1) + Math.PI / 2;
 
 		
 
@@ -424,11 +522,53 @@
 
 		if (first) {
 			addEventListener("resize", () => {
-				adjustPlayerPos(playerIndex, playerCount, false);
+				adjustPlayerPos(playerIndex, posIndex, playerCount, false);
 			});
 		}
 	}
 
+
+
+	function addTLEventListeners(id) {
+		window.addEventListener("beforeunload", () => {
+			DotNet.invokeMethodAsync("LightBlueFox.Games.Poker.Web", "GameView_OnBeforeUnload", id);
+		});
+		window.addEventListener("unload", () => {
+			DotNet.invokeMethodAsync("LightBlueFox.Games.Poker.Web", "GameView_OnUnload", id);
+		});
+	}
+
+	var turnTimerAnimatorID = null;
+	var turnTimerRemaining = 0;
+	var totalTurnTimer = 0;
+	var origTime;
+
+	function animateTurnTimer(amnt) {
+		var elem = document.getElementById("doesTurn_progressbar");
+		elem.style.width = "100%";
+		turnTimerRemaining = amnt;
+		totalTurnTimer = amnt;
+		origTime = new Date();
+		if (!turnTimerAnimatorID) {
+			turnTimerAnimatorID = setInterval(progressFrame, 20);
+		}
+		
+	}
+
+	function progressFrame() {
+		turnTimerRemaining = totalTurnTimer - ((new Date()).getTime() - origTime.getTime());
+		var elem = document.getElementById("doesTurn_progressbar");
+		if (turnTimerRemaining <= 0) {
+			turnTimerRemaining = 0;
+			totalTurnTimer = 0;
+			elem.style.width = "0%";
+			clearInterval(turnTimerAnimatorID);
+			turnTimerAnimatorID = null;
+			origTime = null;
+		} else {
+			elem.style.width = ((turnTimerRemaining / totalTurnTimer) * 100) + "%";
+		}
+	}
 </script>
 
 <div style="@(IsLoading ? "" : "display: none")" class="loading_overlay">
@@ -483,7 +623,7 @@
 		<div style="position: relative">
 			@for (int i = 0; i < 5; i++)
 			{
-				@if (TableCards.Length <= i)
+				@if (TableCards == null || TableCards.Length <= i)
 				{
 					<CardRender Style="@("position: absolute; left: " + (-2.5 + i * 20) + "%;")" Scale="0.8"></CardRender>
 				}
@@ -518,7 +658,7 @@ else
 	@foreach (var p in OtherPlayers)
 	{
 		<PlayerDisplay Player="p" 
-					DisplayCards=true 
+					DisplayCards=IsRoundRunning 
 					IsTurn="(WhoseTurn != null && WhoseTurn.Value.Name == p.Name)" 
 					Cards="(IsRoundRunning && roundEnd != null && roundEnd.Summaries.Where((pi) => pi.Player.Name == p.Name) is var pi && pi.Count() > 0 && pi.First().CardsVisible && pi.First().Cards.Length == 2) ? pi.First().Cards : null" 
 					Index="Array.IndexOf(OtherPlayers, p)"

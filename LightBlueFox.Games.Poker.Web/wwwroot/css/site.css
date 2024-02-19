@@ -38,5 +38,24 @@
 }
 
 
+@media screen and (min-width: 1px){
+    .font_main_heading {
+        font-size: 50px !important;
+    }
 
+    .font_label_big {
+        font-size: 30px;
+    }
+}
 
+/*
+@media screen and (max-width: 600px) {
+    .font_main_heading {
+        font-size: 20px !important;
+    }
+
+    .font_label_big {
+        font-size: 15px;
+    }
+}
+*/

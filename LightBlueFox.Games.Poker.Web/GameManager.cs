@@ -33,5 +33,11 @@ namespace LightBlueFox.Games.Poker.Web
 		{
 			runningGamesByID[gameID].RemovePlayer(player);
 		}
+
+		public static string getAnyRunningGame()
+		{
+			if (runningGamesByID.Count == 0) return "";
+			else return runningGamesByID.Values.OrderByDescending((g) => g.Players.Count).First().ID;
+		}
 	}
 }

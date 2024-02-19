@@ -14,7 +14,7 @@ namespace LightBlueFox.Games.Poker.PlayerHandles
         private ProtocolConnection _connection;
         public ProtocolConnection? Connection { 
             get { 
-                if(!isDisconnected) return _connection;
+                if(isConnected) return _connection;
                 else return null;
             } 
             private set { 
@@ -71,28 +71,41 @@ namespace LightBlueFox.Games.Poker.PlayerHandles
             });
         }
 
-        public static Dictionary<uint, TaskCompletionSource<ActionInfo>> WaitingForActions = new();
-        public static uint MaxTURNID = 0;
+        public static Dictionary<PlayerInfo, TaskCompletionSource<ActionInfo>> WaitingForActions = new();
 
 
         protected override ActionInfo DoTurn(PokerAction[] actions)
         {
-            var id = MaxTURNID++;
-            WaitingForActions.Add(id, new TaskCompletionSource<ActionInfo>());
+            
+            if (WaitingForActions.ContainsKey(this.Player)) throw new InvalidOperationException("Trying to do turn before last turn was finished!");
+
             Connection?.WriteMessage<DoTurn>(new()
             {
                 PossibleActions = actions,
-                TurnID = id
             }) ;
-            return WaitingForActions[id].Task.GetAwaiter().GetResult();   
+            var res = WaitingForActions[this.Player].Task.GetAwaiter().GetResult();
+            WaitingForActions.Remove(this.Player);
+            return res;
         }
 
-        [MessageHandler]
+		public override void TurnCanceled(PlayerInfo player, TurnCancelReason reason)
+		{
+			if(player.Name == this.Player.Name && WaitingForActions.ContainsKey(player))
+            {
+                WaitingForActions[player].TrySetResult(new()
+                {
+                    ActionType = PokerAction.Cancelled,
+                    BetAmount = 0
+                });
+            }
+		}
+
+		[MessageHandler]
         public static void HandleTurnAction(PerformAction act, MessageInfo inf)
         {
-            if (WaitingForActions.ContainsKey(act.TurnID))
+            if (WaitingForActions.ContainsKey(act.Player))
             {
-                WaitingForActions[act.TurnID].SetResult(act.Action);
+                WaitingForActions[act.Player].TrySetResult(act.Action);
             }
         }
 
@@ -147,11 +160,19 @@ namespace LightBlueFox.Games.Poker.PlayerHandles
             });
         }
 
-		public override void Reconnect(PlayerHandle newPlayerHandle)
+		public override void Reconnected(PlayerInfo yourPlayer, Card[]? yourCards, GameInfo gameInfo, PlayerInfo[] otherPlayers, Card[]? tableCards, PotInfo[]? pots, int currentMinBet)
 		{
-			if(newPlayerHandle is RemotePlayer rp) Connection = rp.Connection;
+            Connection?.WriteMessage<ReconnectInfo>(new()
+            {
+                YourPlayer = yourPlayer,
+                YourCards = yourCards ?? new Card[] { },
+                GameInfo = gameInfo,
+                OtherPlayers = otherPlayers,
+                TableCards = tableCards ?? new Card[] { },
+                Pots = pots ?? new PotInfo[] { },
+                CurrentMinBet = currentMinBet
+            });
 		}
-
 		public override void TellGameInfo(GameInfo gameInfo)
 		{
             Connection?.WriteMessage<GameInfo>(gameInfo);
@@ -160,6 +181,19 @@ namespace LightBlueFox.Games.Poker.PlayerHandles
 		public override void PlayersTurn(PlayersTurn pt)
 		{
 			Connection?.WriteMessage(pt);
+		}
+
+		public override void StartSpectating(PlayerInfo yourPlayer, GameInfo gameInfo, PlayerInfo[] otherPlayers, Card[]? tableCards, PotInfo[]? pots, int currentMinBet)
+		{
+			Connection?.WriteMessage<SpectateInfo>(new()
+			{
+				YourPlayer = yourPlayer,
+				GameInfo = gameInfo,
+				OtherPlayers = otherPlayers,
+				TableCards = tableCards ?? new Card[] { },
+				Pots = pots ?? new PotInfo[] { },
+				CurrentMinBet = currentMinBet
+			});
 		}
 	}
 }

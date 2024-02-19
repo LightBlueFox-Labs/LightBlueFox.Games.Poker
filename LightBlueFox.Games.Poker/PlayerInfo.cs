@@ -10,12 +10,14 @@ namespace LightBlueFox.Games.Poker
     [CompositeSerialize]
     public struct PlayerInfo: IEquatable<PlayerInfo>
     {
+        
+
         public readonly string Name;
-        public PlayerStatus Status { get; internal set; }
-        public int Stack { get; internal set; }
-        public int CurrentStake { get; internal set; }
-        public PlayerRole Role { get; internal set; }
-        public bool IsAllIn { get; internal set; }
+        public PlayerStatus Status { get; set; }
+        public int Stack { get; set; }
+        public int CurrentStake { get; set; }
+        public PlayerRole Role { get; set; }
+        public bool IsConnected { get; set; } = true;
 
         public PlayerInfo(string name, int stack) 
         { 
@@ -31,8 +33,6 @@ namespace LightBlueFox.Games.Poker
         }
 
         public override string ToString() => Name;
-
-        
     }
 
     [Flags]
@@ -45,4 +45,14 @@ namespace LightBlueFox.Games.Poker
 
         DealerAndSB = 3
     }
+
+	public enum PlayerStatus
+	{
+		NotPlaying,
+		Waiting,
+		DoesTurn,
+		Folded,
+
+        Spectating
+	}
 }

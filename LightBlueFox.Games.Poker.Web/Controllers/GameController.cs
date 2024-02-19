@@ -8,11 +8,18 @@ namespace LightBlueFox.Games.Poker.Web.Controllers
 {
 	public class GameController : PlayerHandle
 	{
-		public readonly GameView View;
+		public GameView View { get; private set; }
+
+		public bool CanStartRound
+		{
+			get
+			{
+				return !View.IsRoundRunning && View.OtherPlayers.Any((p) => p.IsConnected);
+			}
+		}
 
 		public void StartGame()
 		{
-			View.CanStartRound = false;
 			GameManager.TryStartRound(View.GameID);
 		}
 
@@ -25,7 +32,7 @@ namespace LightBlueFox.Games.Poker.Web.Controllers
 		public override void OtherPlayerDoes(PlayerInfo playerInfo, ActionInfo action)
 		{
 			View.Log("[{0}]: Player {1} performed {2}.", this.Player.Name, playerInfo.Name, action.ActionType);
-			View.UpdatePlayerInfo(playerInfo);
+			UpdatePlayerInfo(playerInfo);
 			
 			//throw new NotImplementedException();
 		}
@@ -35,21 +42,29 @@ namespace LightBlueFox.Games.Poker.Web.Controllers
 			View.Log("[{0}]: Player {1} " + (wasReconnect ? "reconnected." : "connected."), this.Player.Name, playerInfo.Name);
 			if (playerInfo.Name == this.Player.Name)
 			{
-				this.ChangePlayer(playerInfo);
+				View.MyIndex = View.OtherPlayers.Length;
+				UpdatePlayerInfo(playerInfo);
 			}
 			else
 			{
-				View.OtherPlayers = View.OtherPlayers.Append(playerInfo).ToArray();
+				if(!View.OtherPlayers.Any((p) => p.Name == playerInfo.Name)) View.OtherPlayers = View.OtherPlayers.Append(playerInfo).ToArray();
 			}
-
-			if (View.OtherPlayers.Length > 0) View.CanStartRound = true;
+			
 			View.Rerender();
 		}
 
 		public override void PlayerDisconnected(PlayerInfo playerInfo)
 		{
 			View.Log("[{0}]: Player {1} disconnected.", this.Player.Name, playerInfo.Name);
-			//throw new NotImplementedException();
+			if (View.IsRoundRunning)
+			{
+				UpdatePlayerInfo(playerInfo, true);
+			}
+			else
+			{
+				View.RemovePlayers((p) => p.Name == playerInfo.Name);
+			}
+			View.Rerender();
 		}
 		
 		public override void ChangePlayer(PlayerInfo player)
@@ -59,9 +74,28 @@ namespace LightBlueFox.Games.Poker.Web.Controllers
 			View.Rerender();
 		}
 
-		public override void Reconnect(PlayerHandle newPlayerHandle)
+		public override void Reconnected(PlayerInfo yourPlayer, Card[]? yourCards, PokerProtocol.GameInfo gameInfo, PlayerInfo[] otherPlayers, Card[]? tableCards, PotInfo[]? pots, int currentMinBet)
 		{
-			//throw new NotImplementedException();
+			View.MyPlayer = yourPlayer;
+			View.MyCards = yourCards;
+			View.GameInfo = gameInfo;
+			View.TableCards = tableCards;
+			View.Pots = pots;
+			View.MinBet = currentMinBet;
+			View.IsRoundRunning = gameInfo.GameState == GameState.InRound;
+			View.Rerender();
+		}
+
+		public override void StartSpectating(PlayerInfo yourPlayer, PokerProtocol.GameInfo gameInfo, PlayerInfo[] otherPlayers, Card[]? tableCards, PotInfo[]? pots, int currentMinBet)
+		{
+			View.MyPlayer = yourPlayer;
+			View.MyCards = null;
+			View.GameInfo = gameInfo;
+			View.TableCards = tableCards;
+			View.Pots = pots;
+			View.MinBet = currentMinBet;
+			View.IsRoundRunning = gameInfo.GameState == GameState.InRound;
+			View.Rerender();
 		}
 
 		protected override void NewDealRound(Card[] cards, int minBet)
@@ -84,7 +118,7 @@ namespace LightBlueFox.Games.Poker.Web.Controllers
 			View.Log("\n[{0}]: Your turn. You can perform the following actions: ", Player.Name);
 			for (int i = 0; i < actions.Length; i++)
 			{
-				View.Log(" [{0}] {1}", i, actions[i].Info(CurrentGameStake - Player.CurrentStake));
+				if(CurrentPots != null) View.Log(" [{0}] {1}", i, actions[i].Info(CurrentPots.Last().Stake + CurrentPots.Last().StakeOffset - Player.CurrentStake));
 			}
 
 			var res = View.DoTurn(actions, MaxBet);
@@ -97,14 +131,21 @@ namespace LightBlueFox.Games.Poker.Web.Controllers
 			View.Log($"[{Player}]: {player} bet {amount} {(wasBlind ? "(blind)" : "")}. Current Stakes: {totalStake}. Current Pot {0}. New MinBet: {newMinBet}");
 			View.Pots = pots;
 			View.MinBet = newMinBet;
-			View.UpdatePlayerInfo(player);
+			UpdatePlayerInfo(player);
+		}
+
+		private void UpdatePlayerInfo(PlayerInfo p, bool suppress = false)
+		{
+			if (p.Name == Player.Name) ChangePlayer(p);
+			else View?.UpdatePlayerInfo(p, suppress);
 		}
 
 		protected override void RoundEnded(RoundResult res)
 		{
+			View.WhoseTurn = null;
 			foreach (var item in res.Summaries)
 			{
-				View.UpdatePlayerInfo(item.Player, true);
+				UpdatePlayerInfo(item.Player, true);
 			}
 			View.roundEnd = res;
 			foreach (var pot in res.PotResults)
@@ -117,6 +158,7 @@ namespace LightBlueFox.Games.Poker.Web.Controllers
 
 			}
 			View.Log("------------- ROUND END -----------\n\n");
+			View.Rerender();
 		}
 
 		protected override void RoundStarted(Card[] cards, PlayerInfo[] info, int RoundNR, int btn, int sb, int bb)
@@ -152,10 +194,26 @@ namespace LightBlueFox.Games.Poker.Web.Controllers
 
 		public override void PlayersTurn(PokerProtocol.PlayersTurn pt)
 		{
-			View.UpdatePlayerInfo(pt.Player);
+			UpdatePlayerInfo(pt.Player);
 			View.Log($"It's {pt.Player.Name}'s turn.");
 			View.WhoseTurn = pt.Player;
 			View.Rerender();
+			View.StartTurnTimer(pt.Player, Round.TURN_TIMEOUT);
 		}
+
+		public void Disconnect()
+		{
+			GameManager.DisconnectUser(View.GameID, this);
+		}
+
+		public override void TurnCanceled(PlayerInfo player, TurnCancelReason reason)
+		{
+			if(player.Name == this.Player.Name)
+			{
+				View.AbortTurn();
+			}
+		}
+
+		
 	}
 }

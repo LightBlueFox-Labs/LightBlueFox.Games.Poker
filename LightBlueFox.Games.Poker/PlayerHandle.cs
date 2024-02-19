@@ -7,28 +7,50 @@ namespace LightBlueFox.Games.Poker
 	{
 		public PlayerInfo Player { get { return _player; } }
 		private PlayerInfo _player;
-
-		public bool isDisconnected = false;
-
-		protected int CurrentGameStake;
-		protected int CurrentMinBet;
 		
 		protected PotInfo[]? CurrentPots;
-
+		protected Card[]? cards;
 		protected Card[]? TableCards;
+		protected int CurrentMinBet;
 
 		public PlayerHandle(string name)
 		{
 			_player = new(name, 0);
 		}
 
-		public abstract void Reconnect(PlayerHandle newPlayerHandle);
+		public void Reconnected(PlayerHandle oldPlayerHandle, Round r, Game g) 
+		{
+			CurrentPots = oldPlayerHandle.CurrentPots;
+			TableCards = oldPlayerHandle.TableCards;
+			cards = oldPlayerHandle.cards;
+			CurrentMinBet = r.CurrentMinBet;
+			ChangePlayer(oldPlayerHandle.Player);
+			isConnected = true;
+			Reconnected(oldPlayerHandle._player, oldPlayerHandle.cards, g.Info, r.Players.ToInfo(), oldPlayerHandle.TableCards, oldPlayerHandle.CurrentPots, r.CurrentMinBet);
+		}
+
+		public abstract void Reconnected(PlayerInfo yourPlayer, Card[]? yourCards, GameInfo gameInfo, PlayerInfo[] otherPlayers, Card[]? tableCards, PotInfo[]? pots, int currentMinBet);
+
+		public void StartSpectating(PlayerHandle player, Round r, Game g)
+		{
+			CurrentPots = player.CurrentPots;
+			TableCards = player.TableCards;
+			cards = player.cards;
+			CurrentMinBet = r.CurrentMinBet;
+			ChangePlayer(player.Player);
+			StartSpectating(player._player, g.Info, r.Players.ToInfo(), player.TableCards, player.CurrentPots, r.CurrentMinBet);
+		}
+
+		public abstract void StartSpectating(PlayerInfo yourPlayer, GameInfo gameInfo, PlayerInfo[] otherPlayers, Card[]? tableCards, PotInfo[]? pots, int currentMinBet);
+
+
+
 
 
 		public PlayerStatus Status
 		{
 			get { return Player.Status; }
-			private set
+			internal set
 			{
 				var newP = _player;
 				newP.Status = value;
@@ -59,6 +81,19 @@ namespace LightBlueFox.Games.Poker
 			}
 		}
 
+		public bool isConnected
+		{
+			get
+			{
+				return Player.IsConnected;
+			}
+			internal set
+			{
+				var newP = _player;
+				newP.IsConnected = value;
+				ChangePlayer(newP);
+			}
+		}
 
 		public int Stack
 		{
@@ -76,7 +111,7 @@ namespace LightBlueFox.Games.Poker
 			_player = player;
 		}
 
-		private Card[]? cards;
+		
 		public Card[] Cards
 		{
 			get
@@ -89,16 +124,19 @@ namespace LightBlueFox.Games.Poker
 		{
 			this.cards = cards;
 			Status = PlayerStatus.Waiting;
+			CurrentStake = 0;
 			TableCards = new Card[0];
 			CurrentPots = new PotInfo[] { new(info, 0) };
 			RoundStarted(cards, info, RoundNR, btn, sb, bb);
 		}
 
+		public abstract void TurnCanceled(PlayerInfo player, TurnCancelReason reason);
+
 		public ActionInfo StartTurn(PokerAction[] possibleActions)
 		{
 			Status = PlayerStatus.DoesTurn;
 			var res = DoTurn(possibleActions);
-			Status = res.ActionType == PokerAction.Fold ? PlayerStatus.Folded : PlayerStatus.Waiting;
+			if(res.ActionType != PokerAction.Cancelled) Status = res.ActionType == PokerAction.Fold ? PlayerStatus.Folded : PlayerStatus.Waiting;
 			return res;
 		}
 
@@ -107,7 +145,6 @@ namespace LightBlueFox.Games.Poker
 			Status = PlayerStatus.NotPlaying;
 			Stack += res.Summaries.Where((s) => s.Player.Name == Player.Name).First().CoinsNet;
 			RoundEnded(res);
-			CurrentGameStake = 0;
 			CurrentMinBet = 0;
 			CurrentPots = null;
 			this.cards = null;
@@ -143,7 +180,6 @@ namespace LightBlueFox.Games.Poker
 		public abstract void TellGameInfo(GameInfo gameInfo);
 		public void PlayerBet(PlayerInfo player, int amount, bool wasBlind, int newMinBet, int totalStake, PotInfo[] pots)
 		{
-			CurrentGameStake = totalStake;
 			CurrentPots = pots;
 			CurrentMinBet = newMinBet;
 			PlayerPlacedBet(player, amount, wasBlind, newMinBet, totalStake, pots);
@@ -176,11 +212,5 @@ namespace LightBlueFox.Games.Poker
 		}
 	}
 
-	public enum PlayerStatus
-	{
-		NotPlaying,
-		Waiting,
-		DoesTurn,
-		Folded
-	}
+	
 }

@@ -1,16 +1,11 @@
 ﻿using LightBlueFox.Connect.CustomProtocol.Protocol;
 using LightBlueFox.Games.Poker.PlayerHandles;
 using LightBlueFox.Games.Poker.Utils;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using static LightBlueFox.Games.Poker.PlayerHandles.Remote.PokerProtocol;
 
 namespace LightBlueFox.Games.Poker
 {
-    public class Game
+	public class Game
     {
         public readonly string ID;
 
@@ -22,12 +17,11 @@ namespace LightBlueFox.Games.Poker
 
         private List<PlayerHandle> players = new();
 
-        private List<PlayerHandle> disconnectedPlayers = new();
+        private Dictionary<string, (PlayerHandle, Round)> disconnectedPlayers = new();
         public IReadOnlyList<PlayerHandle> Players
         {
             get { return players.AsReadOnly(); }
         }
-
         public GameInfo Info
         {
             get
@@ -42,32 +36,40 @@ namespace LightBlueFox.Games.Poker
                 };
             }
         }
-
         public void AddPlayer(PlayerHandle p)
         {
             if (players.Any((p2) => p2.Player.Name == p.Player.Name)) throw new ArgumentException("There is already a player with this name!");
-            
 
-            var reconnect = disconnectedPlayers.FirstOrDefault((pl) => pl.Player.Name == p.Player.Name);
 
-			if (reconnect != null)
+            bool wasReconn = false;
+			players.Add(p);
+			if (disconnectedPlayers.GetValueOrDefault(p.Player.Name) is (PlayerHandle, Round) reconnect)
             {
-                reconnect.Reconnect(p);
-                players.Add(reconnect);
-                disconnectedPlayers.Remove(reconnect);
+                wasReconn = true;
+                var oldHandle = reconnect.Item1;
+                var round = reconnect.Item2;
+                var pIndex = Array.IndexOf(round.Players, oldHandle);
+                p.isConnected = true;
+                round.Players[pIndex] = p;
+                p.Reconnected(oldHandle, reconnect.Item2, this);
+                disconnectedPlayers.Remove(p.Player.Name);
             }
             else
             {
-				players.Add(p);
 				p.Stack = 1000;
                 p.TellGameInfo(Info);
+				if (CurrentRound != null)
+				{
+					CurrentRound.AddSpectator(p, this);
+				}
 			}
 
+            
 
             foreach (var pl in players)
             {
                 if (pl != p) p.PlayerConnected(pl.Player, false);
-                pl.PlayerConnected(p.Player, reconnect != null);
+                pl.PlayerConnected(p.Player, wasReconn);
             }
         }
 
@@ -77,7 +79,7 @@ namespace LightBlueFox.Games.Poker
 
             if(p is RemotePlayer rp && getGameForConn.ContainsKey(rp.Connection)) getGameForConn.Remove(rp.Connection);
 			
-            p.isDisconnected = true;
+            p.isConnected = false;
 			players.Remove(p);
 
             foreach (var op in players)
@@ -85,7 +87,10 @@ namespace LightBlueFox.Games.Poker
                 op.PlayerDisconnected(p);
             }
 
-			if (CurrentRound != null && CurrentRound.Players.Contains(p)) disconnectedPlayers.Add(p);
+            if (CurrentRound != null && CurrentRound.Players.Contains(p)) {
+                CurrentRound.OnPlayerDisconnect(p);
+                disconnectedPlayers.Add(p.Player.Name, (p, CurrentRound));
+            }
         }
 
         public GameState State = GameState.NotRunning;

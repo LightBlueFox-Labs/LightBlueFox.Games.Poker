@@ -1,22 +1,35 @@
 ﻿@page "/{errorMsg?}"
 @using LightBlueFox.Games.Poker;
 @using LightBlueFox.Games.Poker.Utils;
+@using System.Text.RegularExpressions;
 @inject NavigationManager NM;
 
 @code{
 	string name;
 
+	public const int MAX_NAME_LEN = 20;
+	public const int MAX_ID_LEN = 10;
+
 	[Parameter]
 	public string? errorMsg { get; set; }
 
-	public string? id { get; set; } = "asd1";
+	public string? id { get; set; } = null;
 	public string isErrorVisible {
 		get
 		{
-			return string.IsNullOrEmpty(errorMsg?.Trim()) ? "hidden" : "visible";
+			return string.IsNullOrEmpty(errorMsg?.Trim()) ? "none" : "inline-block";
 		}
 	}
 
+	public bool IsInputValid
+	{
+		get; set;
+	}
+
+	private void updateValid()
+	{
+		IsInputValid = Regex.IsMatch(id ?? "", "^[a-zA-Z0-9_.-]{1," + MAX_ID_LEN + "}") && Regex.IsMatch(name ?? "", "^[a-zA-Z0-9_. -]{1," + MAX_NAME_LEN + "}");
+	}
 
 	void joinGame()
 	{
@@ -28,6 +41,7 @@
 	public Index()
 	{
 		DeckGenerator dg = new();
+		id = GameManager.getAnyRunningGame();
 		hand = dg.PopRandom(2);
 		table = dg.PopRandom(5);
 	}
@@ -50,9 +64,8 @@
 		border: 3px solid black;
 		display: inline-block;
 		border-radius: 5px;
-		padding: 15px 50px;
+		padding: 55px 5%;
 		width: 75vw;
-		height: 60vh;
 		position: absolute;
 		top: 50%;
 		left: 50%;
@@ -71,8 +84,7 @@
 	}
 
 	.menu input {
-		margin-left: 10%;
-		width: 80%;
+		width: calc(100% - 20px);
 		text-align: left;
 		padding: 10px;
 		border: 0px solid black;
@@ -94,6 +106,8 @@
 		border-radius: 5px;
 		transition: ease-out background 0.2s;
 	}
+
+	
 
 	.menu button:enabled:hover{
 		background-color: darkgreen;
@@ -192,18 +206,41 @@
 		color: orange;
 	}
 
+	#game_id_div{
+		width: 100%;
+		display: table;
+		text-align: left;
+	}
+	#game_id_div #game_id_div span{
+		display: table-cell;
+		width: 30%;
+	}
+	#game_id_div input {
+		display: table-cell;
+		width: 65%;
+		margin-left: 5%;
+	}
 </style>
 
 
 
 <div class="menu">
-	<div class="error" style="visibility: @isErrorVisible">
+	<div class="error" style="display: @isErrorVisible">
 		Error: @errorMsg
 	</div>
 	<h1 style="font-size: 50px">Online Poker Game</h1>
 	<p>Your Name: </p>
-	<Microsoft.AspNetCore.Components.Forms.InputText @bind-Value="name" @oninput="((e) => name = e.Value?.ToString() ?? string.Empty)" type="text" name="name"/>
-	<button disabled="@(string.IsNullOrEmpty(name))" @onclick="joinGame">Join Game</button>
+	<Microsoft.AspNetCore.Components.Forms.InputText @bind-Value="name" @oninput="((e) => { name = e.Value?.ToString() ?? string.Empty; updateValid();})" type="text" name="name"/>
+	
+	<div id="game_id_div">
+		<span>Game ID:</span>
+		<Microsoft.AspNetCore.Components.Forms.InputText @bind-Value="id" @oninput="((e) => {id = e.Value?.ToString() ?? string.Empty; updateValid();})" type="text" name="id" />
+	</div>
+	
+	<button disabled="@(!IsInputValid)" @onclick="joinGame">Join Game</button>
+
+	
+	
 </div>
 
 

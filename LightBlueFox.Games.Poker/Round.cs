@@ -12,10 +12,14 @@ namespace LightBlueFox.Games.Poker
 {
     public class Round
     {
+        public const int TURN_TIMEOUT = 250000;
+
+
         private static int[] _DEALS = { 0, 3, 1, 1 };
 
 
         public PlayerHandle[] Players;
+        public List<PlayerHandle> Spectators = new();
         public List<Card> TableCards = new List<Card>(); 
         public DeckGenerator Deck = new DeckGenerator();
 
@@ -39,6 +43,8 @@ namespace LightBlueFox.Games.Poker
         private int SB;
         
         private int minBet = 0;
+        public int CurrentMinBet { get { return minBet; } }
+
 
         private readonly int RoundNR;
 
@@ -68,24 +74,30 @@ namespace LightBlueFox.Games.Poker
             pots.Add(new(Players.ToInfo(), 0));
         }
 
-
-        private RoundResult inform(RoundResult res, ref GameState state)
+        private RoundResult informResult(RoundResult res, ref GameState state)
         {
             state = GameState.NotRunning;
+            inform((p) => p.EndRound(res));
+            return res;
+        }
+
+        private void inform(Action<PlayerHandle> action, Action<PlayerHandle>? spectatorAction = null, bool suppressSpectators = false)
+        {
             foreach (var p in Players)
             {
-                p.EndRound(res);
-                p.ChangePlayer(new(p.Player.Name, p.Player.Stack));
+                if(p.isConnected) action(p);
             }
-            return res;
+            if (spectatorAction == null) spectatorAction = action; 
+            if (!suppressSpectators)                
+                foreach (var p in Spectators)
+                {
+				    if (p.isConnected) spectatorAction(p);
+                }
         }
 
         public RoundResult PlayRound(ref GameState state)
         {
-            foreach (var p in Players)
-            {
-                p.StartRound(Deck.PopRandom(2), Players.ToInfo(), RoundNR, ButtonIndex, SBIndex, BBIndex);
-            }
+            inform((p) => p.StartRound(Deck.PopRandom(2), Players.ToInfo(), RoundNR, ButtonIndex, SBIndex, BBIndex), null, false);
 
             // SB Bet
             if (!tryBet(Players[SBIndex], SB, true, false)) throw new NotImplementedException("Player cannot provide blind!");
@@ -99,20 +111,20 @@ namespace LightBlueFox.Games.Poker
                 minBet = BB;
                 TableCards.AddRange(Deck.PopRandom(d));
                 Console.WriteLine($"[SERVER] New deal. Now {TableCards.Count}/5 Cards in the middle.");
-                foreach (var p in Players) p.NewCardsDealt(TableCards.ToArray(), minBet);
+
+                inform((p) => p.NewCardsDealt(TableCards.ToArray(), minBet));
 
                 notFolded = Players.Count((p) => p.Status != PlayerStatus.Folded);
                 
                 int dealEnd = Players.Length;
                 for (int i = 0; i < dealEnd; i++)
                 {
-                    if(PerformPlayerTurn(Players[(i + roundOffset) % Players.Length], ref dealEnd, i, i == 0)) return inform(RoundResult.DetermineRoundResult(TableCards.ToArray(), Players, pots.ToArray()), ref state);
+                    if(PerformPlayerTurn(Players[(i + roundOffset) % Players.Length], ref dealEnd, i, i == 0)) return informResult(RoundResult.DetermineRoundResult(TableCards.ToArray(), Players, pots.ToArray()), ref state);
 				}
                 roundOffset = ButtonIndex + 1;
             }
-            return inform(RoundResult.DetermineRoundResult(TableCards.ToArray(), Players, pots.ToArray()), ref state);
+            return informResult(RoundResult.DetermineRoundResult(TableCards.ToArray(), Players, pots.ToArray()), ref state);
         }
-
 
         public static bool CanBet(PlayerHandle player, int betAmount, int currentStake, int minBet, PokerAction? performedAction = null)
         {
@@ -166,26 +178,50 @@ namespace LightBlueFox.Games.Poker
 				placePotBetRecursively(betAmount, newP);
 				if (absoluteBetSize > minBet) minBet = absoluteBetSize;
 			}
-            
-            foreach (var p in Players) { p.PlayerBet(player, betAmount, isBlind, minBet, ActivePot.Stake + ActivePot.StakeOffset, pots.ToArray()); }
+
+            inform((p) => p.PlayerBet(player, betAmount, isBlind, minBet, ActivePot.Stake + ActivePot.StakeOffset, pots.ToArray()));
             
             
             return true;
         }
 
+        public PlayerInfo? CurrentTurnPlayer { get; private set; }
+
+        private TaskCompletionSource<ActionInfo>? abortPlayerTurn;
+
+        public void OnPlayerDisconnect(PlayerHandle player)
+        {
+            if(Spectators.Contains(player)) Spectators.Remove(player);
+            if(abortPlayerTurn != null && CurrentTurnPlayer?.Name == player.Player.Name)
+            {
+                abortPlayerTurn.SetResult(new()
+                {
+                    ActionType = PokerAction.Cancelled,
+                    BetAmount = 0,
+                });
+            }
+        }
+
+        public void AddSpectator(PlayerHandle player, Game game)
+        {
+            player.Status = PlayerStatus.Spectating;
+            player.StartSpectating(player, this, game);
+        }
+
         private bool PerformPlayerTurn(PlayerHandle player, ref int dealEnd, int currentIndx, bool isFirst)
         {
             if (ActivePot.PlayersInvolved.Length == 1) return true;
-
-
 			if (player.Status == PlayerStatus.Folded) return false;
-
             bool forcedAllIn = !ActivePot.IsPlaying(player);
-
             if (forcedAllIn && pots.ToArray().GetRelevantPot(player) is var relPot && player.CurrentStake == relPot.MaxPotStake + relPot.StakeOffset) return false;
 
+
             int maxBet = ActivePot.GetMaxBet(player);
+            CurrentTurnPlayer = player;
+            
+
             ActionInfo result;
+            TurnCancelReason? cancelReason;
 			var options = new PokerAction[]
 			{
 				PokerAction.Fold,
@@ -199,21 +235,54 @@ namespace LightBlueFox.Games.Poker
                 PokerAction.Call
             };
 
-			if (player.isDisconnected) result = new() { ActionType = PokerAction.Fold };
+
+            
+			abortPlayerTurn = new();
+            if (!player.isConnected)
+            {
+                result = new()
+                {
+                    ActionType = PokerAction.Cancelled
+                };
+                cancelReason = TurnCancelReason.Disconnect;
+			}   
+			else
+            {
+				int taskIndx = 0;
+				var tasks = new Task<ActionInfo>[]
+                {
+                    PlayerDoesTurnAsync(options, player, isFirst),
+                    abortPlayerTurn.Task,
+                    Task.Run(() =>
+                    {
+                        Task.Delay(TURN_TIMEOUT).Wait();
+                        return new ActionInfo() { ActionType = PokerAction.Cancelled, BetAmount = 0 };
+                    })
+                };
+                taskIndx = Task<ActionInfo>.WaitAny(tasks);
+                cancelReason = taskIndx > 0 ? Enum.GetValues<TurnCancelReason>()[taskIndx] : null;
+				result = tasks[taskIndx].Result;
+            }
+			abortPlayerTurn = null;
+
+
+			if (result.ActionType == PokerAction.Cancelled)
+            {
+				Console.WriteLine($"[SERVER] Player {player.Player}'s turn was cancelled due to {cancelReason}.");
+                player.Status = PlayerStatus.Folded;
+                result = new ActionInfo()
+                {
+                    ActionType = PokerAction.Fold,
+                };
+                inform((p) => { p.TurnCanceled(player, cancelReason ?? TurnCancelReason.Other); p.OtherPlayerDoes(player, result); });
+			}
             else
             {
-                Console.WriteLine($"[SERVER] It's Player {player.Player}'s turn.");
-                foreach (var p in Players) {
-                    p.PlayersTurn(new()
-                    {
-                        Player = player,
-                        NewRound = isFirst
-                    });    
-                }
-                result = player.StartTurn(options);
-            }
-            Console.WriteLine($"[SERVER] Player {player.Player} does {result.ActionType}.");
-            foreach (var p in Players) { p.OtherPlayerDoes(player, result); }
+				Console.WriteLine($"[SERVER] Player {player.Player} does {result.ActionType}.");
+                inform((p) => p.OtherPlayerDoes(player, result));
+			}
+            
+            
 
             if (!options.Contains(result.ActionType)) throw new InvalidDataException("Player performed illegal action.");
 
@@ -234,7 +303,6 @@ namespace LightBlueFox.Games.Poker
                 case PokerAction.Call:
                     if (!tryBet(player, forcedAllIn ? player.Stack : ActivePot.Stake + ActivePot.StakeOffset - player.Player.CurrentStake, false, forcedAllIn, result.ActionType)) throw new InvalidDataException("Player performed illegal call.");
                     break;
-
                 default:
                     throw new NotImplementedException();
             }
@@ -242,8 +310,17 @@ namespace LightBlueFox.Games.Poker
             return false;
         }
 
+        private async Task<ActionInfo> PlayerDoesTurnAsync(PokerAction[] actions, PlayerHandle player, bool isFirst)
+        {
+			Console.WriteLine($"[SERVER] It's Player {player.Player}'s turn.");
+			
+			return await Task.Run(() =>
+            {
+                inform((p) => p.PlayersTurn(new() { Player = player, NewRound = isFirst }));
+				return player.StartTurn(actions);
+            });
+        }
 
-        
     }
 
     
@@ -256,9 +333,17 @@ namespace LightBlueFox.Games.Poker
 
     public enum PokerAction
     {
+        Cancelled,
         Fold,
         Check,
         Call,
         Raise
+    }
+
+    public enum TurnCancelReason
+    {
+        Other,
+        Disconnect,
+        Timeout
     }
 }
