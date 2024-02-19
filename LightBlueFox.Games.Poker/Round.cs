@@ -156,7 +156,7 @@ namespace LightBlueFox.Games.Poker
         {
             if (wasForcedAllIn && performedAction != PokerAction.Call) return false;
             /// HTIS IS SO UGLY PLS FIXXXXXXXXX
-            if (!CanBet(player, betAmount, wasForcedAllIn ? player.Stack + player.Player.CurrentStake : ActivePot.Stake + ActivePot.StakeOffset, minBet, performedAction)) return false;
+            if (!CanBet(player, betAmount, wasForcedAllIn ? player.Stack + player.Player.CurrentStake : ActivePot.Stake + ActivePot.StakeOffset, Math.Min(minBet, ActivePot.GetMaxBet(player)), performedAction)) return false;
 
 			var newP = player.Player;
             int oldPlayerStake = newP.CurrentStake;

@@ -109,6 +109,13 @@
 	}
 
 	public int MinBet {get;set;} = 0;
+	private int floored_minbet
+	{
+		get
+		{
+			return Math.Min(MaxBet, MinBet);
+		}
+	}
 	public int MaxBet { get; set; } = 0;
 
 	public PotInfo[]? Pots { get; set; }
@@ -144,10 +151,8 @@
 
 	public ActionInfo DoTurn(PokerAction[] act, int? maxBet)
 	{
-
-
-		betAmnt = MinBet;
 		MaxBet = maxBet ?? -1;
+		betAmnt = floored_minbet;
 		waitingForPlayerAction = new();
 		actions = act;
 		Rerender();
@@ -588,8 +593,8 @@
 		{
 			<div id="betInput">
 				<div id="sliderDiv">
-					<input @oninput="((e)=> betAmnt = int.Parse((string)e.Value))" type="range" step="5" min="@MinBet" max="@MaxBet" value="@MinBet" />
-					<p class="betLabel" id="minBetLabel">@MinBet</p>
+					<input @oninput="((e)=> betAmnt = int.Parse((string)e.Value))" type="range" step="5" min="@floored_minbet" max="@MaxBet" value="@floored_minbet" />
+					<p class="betLabel" id="minBetLabel">@floored_minbet</p>
 					<p class="betLabel" id="maxBetLabel">@MaxBet</p>
 				</div>
 				<button @onclick="(e) => confirmBet(betAmnt)">Bet @betAmnt @(Controller?.LevelAmnt != null ? "(+"  + Controller.LevelAmnt + ")": "")</button>
