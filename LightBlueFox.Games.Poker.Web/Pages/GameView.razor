@@ -5,6 +5,7 @@
 @using Microsoft.JSInterop;
 @using static LightBlueFox.Games.Poker.PlayerHandles.Remote.PokerProtocol;
 @inject IJSRuntime JSRuntime;
+@inject NavigationManager NM;
 @code {
 
 	private GameController? Controller;
@@ -74,7 +75,10 @@
 
 	public void OnUnload()
 	{
-		Console.WriteLine("SDASD");
+		if (Controller != null)
+		{
+			Controller.Disconnect();
+	}
 	}
 
 
@@ -87,6 +91,10 @@
 		}
 	}
 
+	public void DoGameOver()
+	{
+		NM?.NavigateTo("/error/You don't have enough money to continue playing.", true, true);
+	}
 
 	public PlayerInfo MyPlayer;
 	public int MyIndex { get; set; }
@@ -349,7 +357,7 @@
 	.loading_overlay p{
 		position: absolute;
 		left: 50%;
-		top: 50%;
+		top: 40%;
 		transform: translate(-50%, -50%);
 		color: white;
 		font-size: 40px;

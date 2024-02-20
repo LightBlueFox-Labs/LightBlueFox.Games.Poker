@@ -195,5 +195,10 @@ namespace LightBlueFox.Games.Poker.PlayerHandles
 				CurrentMinBet = currentMinBet
 			});
 		}
+
+		public override void NoMoreMoney()
+		{
+            Connection?.WriteMessage<NoMoreMoneyMessage>(new());
+		}
 	}
 }

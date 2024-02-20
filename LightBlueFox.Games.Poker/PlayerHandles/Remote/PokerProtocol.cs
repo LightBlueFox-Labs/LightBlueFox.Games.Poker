@@ -28,6 +28,12 @@ namespace LightBlueFox.Games.Poker.PlayerHandles.Remote
             public int CurrentMinBet;
 		}
 
+        [Message]
+        public struct NoMoreMoneyMessage
+        {
+
+        }
+
 		[Message]
 		public struct SpectateInfo
 		{

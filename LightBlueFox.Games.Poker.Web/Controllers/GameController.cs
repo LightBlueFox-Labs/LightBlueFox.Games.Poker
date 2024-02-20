@@ -14,7 +14,9 @@ namespace LightBlueFox.Games.Poker.Web.Controllers
 		{
 			get
 			{
-				return !View.IsRoundRunning && View.OtherPlayers.Any((p) => p.IsConnected);
+				return !View.IsRoundRunning && Player.Stack >= View.GameInfo.BigBlind && View.OtherPlayers.Any((p) => { 
+					return p.IsConnected && p.Stack >= View.GameInfo.BigBlind;
+				});
 			}
 		}
 
@@ -201,9 +203,14 @@ namespace LightBlueFox.Games.Poker.Web.Controllers
 			View.StartTurnTimer(pt.Player, Round.TURN_TIMEOUT);
 		}
 
+		private bool isDisconnected = false;
 		public void Disconnect()
-		{
-			GameManager.DisconnectUser(View.GameID, this);
+		{ 		
+			if(!isDisconnected)
+			{
+				isDisconnected = true;
+				GameManager.DisconnectUser(View.GameID, this);
+			}
 		}
 
 		public override void TurnCanceled(PlayerInfo player, TurnCancelReason reason)
@@ -214,6 +221,9 @@ namespace LightBlueFox.Games.Poker.Web.Controllers
 			}
 		}
 
-		
+		public override void NoMoreMoney()
+		{
+			View.DoGameOver();
+		}
 	}
 }

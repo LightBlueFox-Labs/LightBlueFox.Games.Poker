@@ -29,6 +29,8 @@ namespace LightBlueFox.Games.Poker
 			Reconnected(oldPlayerHandle._player, oldPlayerHandle.cards, g.Info, r.Players.ToInfo(), oldPlayerHandle.TableCards, oldPlayerHandle.CurrentPots, r.CurrentMinBet);
 		}
 
+		public abstract void NoMoreMoney();
+
 		public abstract void Reconnected(PlayerInfo yourPlayer, Card[]? yourCards, GameInfo gameInfo, PlayerInfo[] otherPlayers, Card[]? tableCards, PotInfo[]? pots, int currentMinBet);
 
 		public void StartSpectating(PlayerHandle player, Round r, Game g)

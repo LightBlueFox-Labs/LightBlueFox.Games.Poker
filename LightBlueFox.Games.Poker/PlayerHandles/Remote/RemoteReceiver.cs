@@ -1,4 +1,5 @@
-﻿using LightBlueFox.Connect.CustomProtocol.Protocol;
+﻿using LightBlueFox.Connect;
+using LightBlueFox.Connect.CustomProtocol.Protocol;
 using static LightBlueFox.Games.Poker.PlayerHandles.Remote.PokerProtocol;
 
 namespace LightBlueFox.Games.Poker.PlayerHandles.Remote
@@ -110,5 +111,13 @@ namespace LightBlueFox.Games.Poker.PlayerHandles.Remote
 		{
 			Receivers[inf.From].MyPlayer.StartSpectating(spectateInfo.YourPlayer, spectateInfo.GameInfo, spectateInfo.OtherPlayers, nullify(spectateInfo.TableCards), nullify(spectateInfo.Pots), spectateInfo.CurrentMinBet);
 		}
+
+        [MessageHandler]
+        public static void NoMoreMoneyHandler(NoMoreMoneyMessage msg, MessageInfo inf)
+        {
+            Receivers[inf.From].MyPlayer.NoMoreMoney();
+            inf.From.Connection.CloseConnection();
+            Receivers.Remove(inf.From);
+        }
 	}
 }

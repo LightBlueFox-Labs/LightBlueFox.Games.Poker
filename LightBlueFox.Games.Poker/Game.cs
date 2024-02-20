@@ -99,22 +99,37 @@ namespace LightBlueFox.Games.Poker
 
         public void startRound()
         {
-            RoundNR++;
+            
             if (CurrentRound != null || State == GameState.InRound) throw new InvalidOperationException("Round is already being played!");
-            if (players.Count < 2) throw new InvalidOperationException("Need at least 2 Players to play round!");
 
+			
 
-            State = GameState.InRound;
+			if (players.Count < 2) throw new InvalidOperationException("Need at least 2 Players to play round!");
+
+			RoundNR++;
+			State = GameState.InRound;
 
             int newButtonIndx = (lastButton + 1) % players.Count;
-
-            CurrentRound = new Round(players.ToArray(), SmallBlind, BigBlind, newButtonIndx, RoundNR);
+            lastButton = newButtonIndx;
+            CurrentRound = new Round(players.Where((p) => p.Stack >= BigBlind).ToArray(), SmallBlind, BigBlind, newButtonIndx, RoundNR);
 
             CurrentRound.PlayRound(ref State);
             disconnectedPlayers.Clear();
 
-            CurrentRound = null;
-        }
+			CurrentRound = null;
+			for (int i = Players.Count - 1; i >= 0; i--)
+			{
+                var p = Players[i];
+
+                if (p.Stack < BigBlind) {
+					RemovePlayer(p);
+					p.NoMoreMoney();
+                }
+			}
+
+		}
+
+        
 
         public Game(string ID) => this.ID = ID;
 
