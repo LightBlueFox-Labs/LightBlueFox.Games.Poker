@@ -7,9 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="LightBlueFox.Connect">
-      <HintPath>..\..\Libraries\.NET\LBF Networking Libraries\LightBlueFox.Connect.Net\bin\Debug\net7.0\LightBlueFox.Connect.dll</HintPath>
-    </Reference>
+    <PackageReference Include="LightBlueFox.Connect" Version="0.0.1" />
   </ItemGroup>
 
 </Project>

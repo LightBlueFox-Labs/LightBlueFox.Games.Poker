@@ -4,18 +4,13 @@
     <TargetFramework>net7.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <OutputType>Exe</OutputType>
+    <StartupObject>LightBlueFox.Games.Poker.Web.Entry</StartupObject>
+    
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="LightBlueFox.Connect">
-      <HintPath>..\..\Libraries\.NET\LBF Networking Libraries\LightBlueFox.Connect.Net\bin\Debug\net7.0\LightBlueFox.Connect.dll</HintPath>
-    </Reference>
-    <Reference Include="LightBlueFox.Connect.Net">
-      <HintPath>..\..\Libraries\.NET\LBF Networking Libraries\LightBlueFox.Connect.Net\bin\Debug\net7.0\LightBlueFox.Connect.Net.dll</HintPath>
-    </Reference>
-    <Reference Include="LightBlueFox.Games.Poker">
-      <HintPath>..\..\LightBlueFox.Games.Poker\LightBlueFox.Games.Poker\bin\Debug\net7.0\LightBlueFox.Games.Poker.dll</HintPath>
-    </Reference>
+    <Content Remove="Pages\GameOver.razor" />
   </ItemGroup>
 
   <ItemGroup>
@@ -25,5 +20,15 @@
   <ItemGroup>
     <ProjectReference Include="..\LightBlueFox.Games.Poker\LightBlueFox.Games.Poker.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <UpToDateCheckInput Remove="Pages\GameOver.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="Pages\GameOver.razor" />
+  </ItemGroup>
+
+  
 
 </Project>

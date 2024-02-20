@@ -98,12 +98,8 @@ namespace LightBlueFox.Games.Poker
         public Round? CurrentRound = null;
 
         public void startRound()
-        {
-            
+        {     
             if (CurrentRound != null || State == GameState.InRound) throw new InvalidOperationException("Round is already being played!");
-
-			
-
 			if (players.Count < 2) throw new InvalidOperationException("Need at least 2 Players to play round!");
 
 			RoundNR++;
