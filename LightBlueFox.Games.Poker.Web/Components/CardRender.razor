@@ -27,16 +27,17 @@
 	[Parameter]
 	public string Style { get; set; } = "";
 
-
 	private string card_img_name
 	{
 		get
 		{
-			return ShowAsPlaceHolder ? "placeholder.svg" : ShowBack || Value == null || Suit == null ? "back.svg" : Suit.ToString() + "_" + (((int)Value) > (int)CardValue.Ten ? Value.ToString() : ((int)Value).ToString()) + ".svg";
+			if (ShowAsPlaceHolder) return "placeholder.svg";
+			else if (ShowBack || Value == null || Suit == null) return "back.svg";
+			else return (Suit.ToString() + "_" + (((int)Value) > (int)CardValue.Ten ? Value.ToString() : ((int)Value).ToString())) + ".svg";
 		}
 	}
 }
 
 
 
-<object class="@Class" style="transform: scale(@Scale); @Style" data="/resc/cards/@card_img_name" type="image/svg+xml"/>
+<object class="@Class" style="transform: scale(@Scale); @Style" data="/resc/cards/@(card_img_name.ToLowerInvariant())" type="image/svg+xml"/>
