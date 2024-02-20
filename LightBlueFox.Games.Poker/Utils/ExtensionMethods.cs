@@ -46,5 +46,17 @@ namespace LightBlueFox.Games.Poker.Utils
 			}
 			return total;
 		}
+
+		public static void UpdatePlayers(this List<PotInfo> potInfos, PlayerInfo player)
+		{
+			foreach (var p in potInfos)
+			{
+				var pi = Array.IndexOf(p.PlayersInvolved, player);
+				if(pi >= 0)
+				{
+					p.PlayersInvolved[pi] = player;
+				}
+			}
+		}
 	}
 }

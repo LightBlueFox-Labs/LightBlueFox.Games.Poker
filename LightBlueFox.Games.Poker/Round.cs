@@ -162,6 +162,7 @@ namespace LightBlueFox.Games.Poker
             int oldPlayerStake = newP.CurrentStake;
 			newP.CurrentStake += betAmount;
 			newP.Stack -= betAmount;
+			pots.UpdatePlayers(player.Player);
 			player.ChangePlayer(newP);
 
 			if (wasForcedAllIn)
@@ -178,7 +179,7 @@ namespace LightBlueFox.Games.Poker
 				placePotBetRecursively(betAmount, newP);
 				if (absoluteBetSize > minBet) minBet = absoluteBetSize;
 			}
-
+     
             inform((p) => p.PlayerBet(player, betAmount, isBlind, minBet, ActivePot.Stake + ActivePot.StakeOffset, pots.ToArray()));
             
             
