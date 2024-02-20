@@ -31,7 +31,7 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.PAT_READ_PACKAGES }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       # This step uses [docker/metadata-action](https://github.com/docker/metadata-action#about) to extract tags and labels that will be applied to the specified image. The `id` "meta" allows the output of this step to be referenced in a subsequent step. The `images` value provides the base name for the tags and labels.
       - name: Extract metadata (tags, labels) for Docker
         id: meta
@@ -48,6 +48,6 @@ jobs:
           push: true
           build-args: |
             NUGET_USER=${{ github.actor }}
-            NUGET_PASS=${{ secrets.GITHUB_TOKEN }}
+            NUGET_PASS=${{ secrets.PAT_READ_PACKAGES }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
