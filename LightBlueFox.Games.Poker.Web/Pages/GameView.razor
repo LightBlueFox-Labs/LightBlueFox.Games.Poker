@@ -78,7 +78,7 @@
 		if (Controller != null)
 		{
 			Controller.Disconnect();
-	}
+		}
 	}
 
 
@@ -508,7 +508,7 @@
 		border-radius: 5px 5px 0px 0px;
 	}
 
-	
+
 </style>
 
 
@@ -571,7 +571,14 @@
 	function progressFrame() {
 		turnTimerRemaining = totalTurnTimer - ((new Date()).getTime() - origTime.getTime());
 		var elem = document.getElementById("doesTurn_progressbar");
-		if (turnTimerRemaining <= 0) {
+
+		if (elem == null) {
+			turnTimerRemaining = 0;
+			totalTurnTimer = 0;
+			clearInterval(turnTimerAnimatorID);
+			turnTimerAnimatorID = null;
+			origTime = null;
+		}else if (turnTimerRemaining <= 0) {
 			turnTimerRemaining = 0;
 			totalTurnTimer = 0;
 			elem.style.width = "0%";
@@ -653,6 +660,9 @@ else
 {
 	<button id="startGame" @onclick="((e) => { if(CanStartRound) { Controller?.StartGame(); } })" disabled="@(!CanStartRound)">@(CanStartRound ? "Start Round!" : "Waiting for players...")</button>
 }
+
+
+
 
 
 <svg id="player_ellipse" width="100%" height="100%">
