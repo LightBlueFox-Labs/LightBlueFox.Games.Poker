@@ -1,0 +1,20 @@
+﻿@page "/readlog/{LogID}"
+
+<h3>LogViewer</h3>
+
+@code {
+	[Parameter]
+	public string? LogID { get; set; }
+
+	private string gameLog
+	{
+		get
+		{
+			if (LogID is string id && GameManager.runningGamesByID.ContainsKey(id)) return GameManager.runningGamesByID[id].LogText;
+			return "Loading...";
+		}
+	}
+}
+
+<a href ="/admin">Back to admin</a>
+<p style="white-space: pre-line">@gameLog</p>

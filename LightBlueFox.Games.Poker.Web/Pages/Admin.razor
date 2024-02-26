@@ -1,0 +1,34 @@
+﻿@page "/admin"
+
+
+@code {
+	private List<Game> runningGames
+	{
+		get
+		{
+			return GameManager.runningGamesByID.Values.ToList();
+		}
+	}
+
+	private void closeGame(Game game)
+	{
+		GameManager.runningGamesByID.Remove(game.ID);
+		game.Close();
+	}
+}
+<h3>Admin Page</h3>
+
+
+@foreach(var g in runningGames)
+{
+	<div class="game_container">
+		<span class="id">ID: @g.ID </span>
+		<span class="player_count">Players: @g.Players.Count</span>
+		<button @onclick="() => {closeGame(g);}" class="close_btn">Close Game</button>
+		<a href="/readlog/@g.ID">Log</a>
+	</div>
+}
+@if(runningGames.Count == 0)
+{
+	<p>No running games.</p>
+}
