@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using LightBlueFox.Connect;
 using LightBlueFox.Connect.CustomProtocol.Protocol;
+using LightBlueFox.Games.Poker.Exceptions;
 using static LightBlueFox.Games.Poker.PlayerHandles.Remote.PokerProtocol;
 
 namespace LightBlueFox.Games.Poker.PlayerHandles
@@ -42,7 +43,6 @@ namespace LightBlueFox.Games.Poker.PlayerHandles
         {
             WaitingForReady.Add(c, new());
             string name = WaitingForReady[c].Task.GetAwaiter().GetResult();
-            Console.WriteLine("Player identifies as " + name);
             return new RemotePlayer(c, name);
         }
         
@@ -196,9 +196,22 @@ namespace LightBlueFox.Games.Poker.PlayerHandles
 			});
 		}
 
-		public override void NoMoreMoney()
+		public override void InformException(SerializedExceptionInfo exception)
 		{
-            Connection?.WriteMessage<NoMoreMoneyMessage>(new());
+            Connection?.WriteMessage<ExceptionInformation>(new ExceptionInformation()
+            {
+                Info = exception
+            });
+		}
+
+		public override void RoundClosed()
+		{
+            Connection?.WriteMessage<RoundClosed>(new());            
+		}
+
+		public override void GameClosed()
+		{
+			Connection?.WriteMessage<GameClosed>(new());
 		}
 	}
 }

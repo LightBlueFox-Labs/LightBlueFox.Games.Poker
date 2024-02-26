@@ -1,5 +1,6 @@
 ﻿using LightBlueFox.Connect.CustomProtocol.Protocol;
 using LightBlueFox.Connect.CustomProtocol.Serialization;
+using LightBlueFox.Games.Poker.Exceptions;
 using LightBlueFox.Games.Poker.Utils;
 
 namespace LightBlueFox.Games.Poker.PlayerHandles.Remote
@@ -33,6 +34,23 @@ namespace LightBlueFox.Games.Poker.PlayerHandles.Remote
         {
 
         }
+
+        [Message]
+        public struct ExceptionInformation
+        {
+            public SerializedExceptionInfo Info;
+        }
+
+		[Message]
+		public struct RoundClosed
+		{
+		}
+
+		[Message]
+		public struct GameClosed
+		{
+		}
+
 
 		[Message]
 		public struct SpectateInfo
