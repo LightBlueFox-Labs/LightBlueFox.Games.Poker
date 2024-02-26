@@ -1,4 +1,5 @@
-﻿using LightBlueFox.Games.Poker.Utils;
+﻿using LightBlueFox.Games.Poker.Exceptions;
+using LightBlueFox.Games.Poker.Utils;
 using static LightBlueFox.Games.Poker.PlayerHandles.Remote.PokerProtocol;
 
 namespace LightBlueFox.Games.Poker
@@ -29,7 +30,10 @@ namespace LightBlueFox.Games.Poker
 			Reconnected(oldPlayerHandle._player, oldPlayerHandle.cards, g.Info, r.Players.ToInfo(), oldPlayerHandle.TableCards, oldPlayerHandle.CurrentPots, r.CurrentMinBet);
 		}
 
-		public abstract void NoMoreMoney();
+		public abstract void InformException(SerializedExceptionInfo exception);
+
+		public abstract void RoundClosed();
+		public abstract void GameClosed();
 
 		public abstract void Reconnected(PlayerInfo yourPlayer, Card[]? yourCards, GameInfo gameInfo, PlayerInfo[] otherPlayers, Card[]? tableCards, PotInfo[]? pots, int currentMinBet);
 

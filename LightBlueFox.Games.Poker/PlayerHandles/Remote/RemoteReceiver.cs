@@ -1,5 +1,6 @@
 ﻿using LightBlueFox.Connect;
 using LightBlueFox.Connect.CustomProtocol.Protocol;
+using LightBlueFox.Games.Poker.Exceptions;
 using static LightBlueFox.Games.Poker.PlayerHandles.Remote.PokerProtocol;
 
 namespace LightBlueFox.Games.Poker.PlayerHandles.Remote
@@ -113,11 +114,27 @@ namespace LightBlueFox.Games.Poker.PlayerHandles.Remote
 		}
 
         [MessageHandler]
-        public static void NoMoreMoneyHandler(NoMoreMoneyMessage msg, MessageInfo inf)
+        public static void ExceptionInfoHandler(ExceptionInformation info, MessageInfo inf)
         {
-            Receivers[inf.From].MyPlayer.NoMoreMoney();
-            inf.From.Connection.CloseConnection();
-            Receivers.Remove(inf.From);
+            Receivers[inf.From].MyPlayer.InformException(info.Info);
+
+            if(info.Info.Consequence == ExceptionConsequence.Kicked || info.Info.Consequence == ExceptionConsequence.GameClose)
+            {
+                Receivers.Remove(inf.From);
+                Receivers[inf.From].Connection.Connection.CloseConnection();
+            }
         }
+
+        [MessageHandler]
+        public static void GameClosedHandler(GameClosed gc, MessageInfo inf)
+        {
+            Receivers[inf.From].MyPlayer.GameClosed();
+        }
+
+		[MessageHandler]
+		public static void RoundClosedHandler(RoundClosed gc, MessageInfo inf)
+		{
+			Receivers[inf.From].MyPlayer.GameClosed();
+		}
 	}
 }

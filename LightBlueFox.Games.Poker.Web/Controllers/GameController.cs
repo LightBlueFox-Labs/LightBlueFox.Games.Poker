@@ -1,8 +1,7 @@
-﻿using LightBlueFox.Games.Poker.Web.Pages;
-using LightBlueFox.Games.Poker;
+﻿using LightBlueFox.Games.Poker.Exceptions;
 using LightBlueFox.Games.Poker.PlayerHandles.Remote;
 using LightBlueFox.Games.Poker.Utils;
-using Microsoft.AspNetCore.Mvc;
+using LightBlueFox.Games.Poker.Web.Pages;
 
 namespace LightBlueFox.Games.Poker.Web.Controllers
 {
@@ -14,7 +13,8 @@ namespace LightBlueFox.Games.Poker.Web.Controllers
 		{
 			get
 			{
-				return !View.IsRoundRunning && Player.Stack >= View.GameInfo.BigBlind && View.OtherPlayers.Any((p) => { 
+				return !View.IsRoundRunning && Player.Stack >= View.GameInfo.BigBlind && View.OtherPlayers.Any((p) =>
+				{
 					return p.IsConnected && p.Stack >= View.GameInfo.BigBlind;
 				});
 			}
@@ -25,7 +25,8 @@ namespace LightBlueFox.Games.Poker.Web.Controllers
 			GameManager.TryStartRound(View.GameID);
 		}
 
-		public GameController(GameView gameView) : base(gameView.PlayerName) {
+		public GameController(GameView gameView) : base(gameView.PlayerName)
+		{
 			View = gameView;
 			GameManager.JoinGame(gameView.GameID, this);
 			View.IsLoading = false;
@@ -35,7 +36,7 @@ namespace LightBlueFox.Games.Poker.Web.Controllers
 		{
 			View.Log("[{0}]: Player {1} performed {2}.", this.Player.Name, playerInfo.Name, action.ActionType);
 			UpdatePlayerInfo(playerInfo);
-			
+
 			//throw new NotImplementedException();
 		}
 
@@ -49,9 +50,9 @@ namespace LightBlueFox.Games.Poker.Web.Controllers
 			}
 			else
 			{
-				if(!View.OtherPlayers.Any((p) => p.Name == playerInfo.Name)) View.OtherPlayers = View.OtherPlayers.Append(playerInfo).ToArray();
+				if (!View.OtherPlayers.Any((p) => p.Name == playerInfo.Name)) View.OtherPlayers = View.OtherPlayers.Append(playerInfo).ToArray();
 			}
-			
+
 			View.Rerender();
 		}
 
@@ -68,7 +69,7 @@ namespace LightBlueFox.Games.Poker.Web.Controllers
 			}
 			View.Rerender();
 		}
-		
+
 		public override void ChangePlayer(PlayerInfo player)
 		{
 			base.ChangePlayer(player);
@@ -111,7 +112,7 @@ namespace LightBlueFox.Games.Poker.Web.Controllers
 		public override void TellGameInfo(PokerProtocol.GameInfo gameInfo)
 		{
 			View.Log($"Received Game info: Game ID {gameInfo.ID}, SB {gameInfo.SmallBlind}, BB {gameInfo.BigBlind}, currentState {gameInfo.GameState}");
-			
+
 			View.GameInfo = gameInfo;
 		}
 
@@ -120,7 +121,7 @@ namespace LightBlueFox.Games.Poker.Web.Controllers
 			View.Log("\n[{0}]: Your turn. You can perform the following actions: ", Player.Name);
 			for (int i = 0; i < actions.Length; i++)
 			{
-				if(CurrentPots != null) View.Log(" [{0}] {1}", i, actions[i].Info(CurrentPots.Last().Stake + CurrentPots.Last().StakeOffset - Player.CurrentStake));
+				if (CurrentPots != null) View.Log(" [{0}] {1}", i, actions[i].Info(CurrentPots.Last().Stake + CurrentPots.Last().StakeOffset - Player.CurrentStake));
 			}
 
 			var res = View.DoTurn(actions, MaxBet);
@@ -205,8 +206,8 @@ namespace LightBlueFox.Games.Poker.Web.Controllers
 
 		private bool isDisconnected = false;
 		public void Disconnect()
-		{ 		
-			if(!isDisconnected)
+		{
+			if (!isDisconnected)
 			{
 				isDisconnected = true;
 				GameManager.DisconnectUser(View.GameID, this);
@@ -215,15 +216,38 @@ namespace LightBlueFox.Games.Poker.Web.Controllers
 
 		public override void TurnCanceled(PlayerInfo player, TurnCancelReason reason)
 		{
-			if(player.Name == this.Player.Name)
+			if (player.Name == this.Player.Name)
 			{
 				View.AbortTurn();
 			}
 		}
 
-		public override void NoMoreMoney()
+		public override void InformException(SerializedExceptionInfo exception)
 		{
-			View.DoGameOver();
+			switch(exception.Consequence) {
+				case ExceptionConsequence.Kicked:
+				case ExceptionConsequence.GameClose:
+					View.DisplayMainScreenError(exception.Message);
+					break;
+				default:
+					View.DisplayExceptionBanner(exception.Message);
+					break;
+			}	
+		}
+
+		public override void RoundClosed()
+		{
+			View.IsRoundRunning = false;
+			View.TableCards = null;
+			View.roundEnd = null;
+			View.WhoseTurn = null;
+			View.AbortTurn();
+			View.Rerender();
+		}
+
+		public override void GameClosed()
+		{
+			View.DisplayMainScreenError("Game closed.");
 		}
 	}
 }
