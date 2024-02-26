@@ -91,9 +91,9 @@
 		}
 	}
 
-	public void DoGameOver()
+	public void DisplayMainScreenError(string err)
 	{
-		NM?.NavigateTo("/error/You don't have enough money to continue playing.", true, true);
+		NM?.NavigateTo("/error/" + err, true, true);
 	}
 
 	public PlayerInfo MyPlayer;
@@ -261,6 +261,11 @@
 	public void StartTurnTimer(PlayerInfo player, int amnt)
 	{
 		JSRuntime.InvokeVoidAsync("animateTurnTimer", amnt);
+	}
+
+	public void DisplayExceptionBanner(string msg)
+	{
+		JSRuntime.InvokeVoidAsync("alert", msg);
 	}
 }
 
