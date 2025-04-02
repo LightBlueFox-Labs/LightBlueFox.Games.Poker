@@ -1,9 +1,11 @@
 ﻿@page "/game/{gameID}/{PlayerName}"
+@using LightBlueFox.Games.Poker.Player
 @using LightBlueFox.Games.Poker.Web.Controllers;
 @using LightBlueFox.Games.Poker;
 @using System.ComponentModel;
 @using Microsoft.JSInterop;
-@using static LightBlueFox.Games.Poker.PlayerHandles.Remote.PokerProtocol;
+@using LightBlueFox.Games.Poker.Cards;
+
 @inject IJSRuntime JSRuntime;
 @inject NavigationManager NM;
 @code {
@@ -27,7 +29,7 @@
 	[JSInvokable]
 	public static async void GameView_OnBeforeUnload(int instanceID)
 	{
-		if(viewsById.GetValueOrDefault(instanceID) is GameView view)
+		if (viewsById.GetValueOrDefault(instanceID) is GameView view)
 		{
 			view.OnBeforeUnload();
 		}
@@ -67,7 +69,7 @@
 
 	public void OnBeforeUnload()
 	{
-		if(Controller != null)
+		if (Controller != null)
 		{
 			Controller.Disconnect();
 		}
@@ -116,7 +118,7 @@
 		}
 	}
 
-	public int MinBet {get;set;} = 0;
+	public int MinBet { get; set; } = 0;
 	private int floored_minbet
 	{
 		get
@@ -166,7 +168,7 @@
 		Rerender();
 		var res = waitingForPlayerAction.Task.GetAwaiter().GetResult();
 		waitingForPlayerAction = null;
-		actions = new PokerAction[]{ };
+		actions = new PokerAction[] { };
 		return res;
 	}
 
@@ -180,15 +182,16 @@
 
 	private void playerDoesAction(PokerAction a)
 	{
-		if(a == PokerAction.Raise)
+		if (a == PokerAction.Raise)
 		{
 			betMode = true;
 		}
 		else
 		{
-			waitingForPlayerAction?.SetResult(new() {
+			waitingForPlayerAction?.SetResult(new()
+				{
 					ActionType = a,
-			});
+				});
 		}
 	}
 
@@ -212,7 +215,7 @@
 
 	public void UpdatePlayerInfo(PlayerInfo inf, bool suppressUpdate = false)
 	{
-		if(inf.Name == MyPlayer.Name)
+		if (inf.Name == MyPlayer.Name)
 		{
 			MyPlayer = inf;
 		}
@@ -221,10 +224,10 @@
 			if (OtherPlayers[i].Name == inf.Name)
 				OtherPlayers[i] = inf;
 		}
-		if(!suppressUpdate) Rerender();
+		if (!suppressUpdate) Rerender();
 	}
 
-	public GameInfo GameInfo { get; set; }
+	public GameInfo? GameInfo { get; set; }
 
 	public RoundResult? roundEnd { get; set; } = null;
 
@@ -235,7 +238,7 @@
 		MyCards = null;
 		Pots = null;
 		RemovePlayers((p) => !p.IsConnected);
-		for(int i = 0; i < OtherPlayers.Length; i++)
+		for (int i = 0; i < OtherPlayers.Length; i++)
 		{
 			OtherPlayers[i].CurrentStake = 0;
 			OtherPlayers[i].Role = PlayerRole.None;
@@ -249,7 +252,7 @@
 
 	public void RemovePlayers(Predicate<PlayerInfo> match)
 	{
-		if(IsRoundRunning) throw new InvalidOperationException("Cannot remove players while round is running");
+		if (IsRoundRunning) throw new InvalidOperationException("Cannot remove players while round is running");
 
 
 		var l = new List<PlayerInfo>(OtherPlayers);
@@ -270,32 +273,33 @@
 }
 
 
-<link href="/css/quickndirty.css" type="text/css" rel="stylesheet"/>
+<link href="/css/quickndirty.css" type="text/css" rel="stylesheet" />
 
 <style>
 
-	
 
 
-	html{
+
+	html {
 		background-color: darkgreen;
 		overflow: hidden;
-		margin:0px;
-		padding:0px;
+		margin: 0px;
+		padding: 0px;
 	}
 
-	
-	.playerCard{
+
+	.playerCard {
 		position: absolute;
 		left: 35%;
-		bottom: 0%;	
+		bottom: 0%;
 		transition: 0.3s;
 	}
 
-	
+
 	.firstCard {
 		transform: translate(10%, 70%) rotate(7deg) !important;
 	}
+
 	.secondCard {
 		transform: translate(-10%, 70%) rotate(-7deg) !important;
 		z-index: -1;
@@ -310,30 +314,32 @@
 		transform: scale(1.1) translate(-10%, 50%) rotate(-7deg) !important;
 		z-index: 8;
 	}
-	
-	.tableCards{
+
+	.tableCards {
 		position: absolute;
 		top: 50%;
-		left:50%;
+		left: 50%;
 		transform: translate(-50%,-50%);
 		width: 50%;
 		height: 40%;
 		z-index: 0;
 	}
-	#player_ellipse{
-		position:absolute;
-		top:50%;
-		left:50%;
+
+	#player_ellipse {
+		position: absolute;
+		top: 50%;
+		left: 50%;
 		z-index: -2;
 		transform: translate(-50%,-50%);
 	}
-	#player_ellipse ellipse{
-		fill:black;
-		opacity: 10%;
-		transform: translate(50%,50%);
-	}
 
-	.table-info{
+		#player_ellipse ellipse {
+			fill: black;
+			opacity: 10%;
+			transform: translate(50%,50%);
+		}
+
+	.table-info {
 		transform: translate(0%, 50%);
 		width: 90%;
 		margin-left: calc(5% - 15px);
@@ -344,14 +350,14 @@
 		table-layout: fixed;
 	}
 
-	.table-info p {
-		display: table-cell;
-	}
+		.table-info p {
+			display: table-cell;
+		}
 
-	.loading_overlay{
-		position:absolute;
-		top:50%;
-		left:50%;
+	.loading_overlay {
+		position: absolute;
+		top: 50%;
+		left: 50%;
 		transform: translate(-50%,-50%);
 		width: 100vw;
 		height: 100vh;
@@ -359,33 +365,34 @@
 		opacity: 90%;
 		z-index: 1000;
 	}
-	.loading_overlay p{
-		position: absolute;
-		left: 50%;
-		top: 40%;
-		transform: translate(-50%, -50%);
-		color: white;
-		font-size: 40px;
-	}
+
+		.loading_overlay p {
+			position: absolute;
+			left: 50%;
+			top: 40%;
+			transform: translate(-50%, -50%);
+			color: white;
+			font-size: 40px;
+		}
 
 
 	#userActionQuerryContainer {
 		position: absolute;
-		top:70%;
+		top: 70%;
 		background: white;
-		left:50%;
+		left: 50%;
 		border-radius: 10px 10px 5px 5px;
 		transform: translate(-50%,0%);
 		z-index: 1000;
 	}
 
-	#actionTable{
+	#actionTable {
 		display: table;
 		table-layout: fixed;
 		border-top: 1px solid grey;
 	}
 
-	#userActionQuerryContainer h3{
+	#userActionQuerryContainer h3 {
 		padding: 10px 10px 5px 10px;
 		margin: 0px;
 		background-color: royalblue;
@@ -406,28 +413,28 @@
 	}
 
 
-	#userActionQuerryContainer button:hover {
-		background-color: lightgrey;
-	}
+		#userActionQuerryContainer button:hover {
+			background-color: lightgrey;
+		}
 
-	#betInput{
+	#betInput {
 		width: 30vw;
 		display: table;
 	}
 
-	#sliderDiv{
+	#sliderDiv {
 		display: table-cell;
 		padding: 20px;
-		position:relative;
+		position: relative;
 		width: 20vw;
 		margin: 20px;
 	}
-	#sliderDiv input{
-		
-		width: calc(100%);
-	}
 
-	#betInput .betLabel{
+		#sliderDiv input {
+			width: calc(100%);
+		}
+
+	#betInput .betLabel {
 		position: absolute;
 		background: black;
 		color: white;
@@ -435,29 +442,29 @@
 		padding: 6px;
 	}
 
-	#betInput .betLabel::after {
-	  content: "";
-	  position: absolute;
-	  top: 100%;
-	  left: 50%;
-	  margin-left: -5px;
-	  border-width: 5px;
-	  border-style: solid;
-	  border-color: black transparent transparent transparent;
-	}
+		#betInput .betLabel::after {
+			content: "";
+			position: absolute;
+			top: 100%;
+			left: 50%;
+			margin-left: -5px;
+			border-width: 5px;
+			border-style: solid;
+			border-color: black transparent transparent transparent;
+		}
 
 
-	#minBetLabel{
+	#minBetLabel {
 		left: 20px;
 		transform: translate(-50%, -230%);
 	}
 
-	#maxBetLabel{
+	#maxBetLabel {
 		right: 20px;
 		transform: translate(50%,-230%);
 	}
 
-	.bet object{
+	.bet object {
 		display: inline-block !important;
 		height: 30px;
 		width: 30px;
@@ -467,7 +474,7 @@
 		transform: translate(0%, -50%);
 	}
 
-	#game_info{
+	#game_info {
 		display: table;
 		background: black;
 		color: white;
@@ -476,12 +483,13 @@
 		left: 0px;
 		transition: 0.3s ease-in-out;
 	}
-	#game_info p{
-		display: table-cell;
-		padding: 10px;
-	}
 
-	#startGame{
+		#game_info p {
+			display: table-cell;
+			padding: 10px;
+		}
+
+	#startGame {
 		position: absolute;
 		top: 50%;
 		left: 50%;
@@ -494,14 +502,14 @@
 		border-radius: 5px;
 	}
 
-	#startGame:disabled{
-		background: grey;
-	}
+		#startGame:disabled {
+			background: grey;
+		}
 
-	#startGame:not(:disabled):hover{
-		font-size: 35px;
-		background: #1b66de;
-	}
+		#startGame:not(:disabled):hover {
+			font-size: 35px;
+			background: #1b66de;
+		}
 
 	#doesTurn_progressbar {
 		position: absolute;
@@ -513,7 +521,6 @@
 		border-radius: 5px 5px 0px 0px;
 	}
 
-
 </style>
 
 
@@ -524,16 +531,16 @@
 		if (p == null) return;
 
 		var rect = document.getElementById("__ellipse").getBoundingClientRect();
-		var step = (2 * Math.PI / ( playerCount + 1 ));
+		var step = (2 * Math.PI / (playerCount + 1));
 		var angle = - step * (posIndex + 1) + Math.PI / 2;
 
-		
 
-		
+
+
 		var x = (rect.width / 2) * Math.cos(angle) + (window.innerWidth / 2);
 		var y = (rect.height / 2) * Math.sin(angle) + (window.innerHeight / 2);
-		
-		
+
+
 		p.style.position = "absolute";
 		p.style.left = x + "px";
 		p.style.top = y + "px";
@@ -570,7 +577,7 @@
 		if (!turnTimerAnimatorID) {
 			turnTimerAnimatorID = setInterval(progressFrame, 20);
 		}
-		
+
 	}
 
 	function progressFrame() {
@@ -583,7 +590,7 @@
 			clearInterval(turnTimerAnimatorID);
 			turnTimerAnimatorID = null;
 			origTime = null;
-		}else if (turnTimerRemaining <= 0) {
+		} else if (turnTimerRemaining <= 0) {
 			turnTimerRemaining = 0;
 			totalTurnTimer = 0;
 			elem.style.width = "0%";
@@ -617,34 +624,34 @@
 					<p class="betLabel" id="minBetLabel">@floored_minbet</p>
 					<p class="betLabel" id="maxBetLabel">@MaxBet</p>
 				</div>
-				<button @onclick="(e) => confirmBet(betAmnt)">Bet @betAmnt @(Controller?.LevelAmnt != null ? "(+"  + Controller.LevelAmnt + ")": "")</button>
+				<button @onclick="(e) => confirmBet(betAmnt)">Bet @betAmnt @(Controller?.LevelAmnt != null ? "(+" + Controller.LevelAmnt + ")" : "")</button>
 			</div>
 		}
 		else
 		{
 			<div id="actionTable">
-				@foreach(var a in actions)
+				@foreach (var a in actions)
 				{
 					<button @onclick="(e) => playerDoesAction(a)">@a.ToString() @(a == PokerAction.Call && Controller?.LevelAmnt != null ? "(" + Controller.LevelAmnt + ")" : "")</button>
 				}
-				
+
 			</div>
 		}
 	</div>
 }
 
-@if(MyCards != null && MyCards.Length == 2)
+@if (MyCards != null && MyCards.Length == 2)
 {
 	<CardRender Class="playerCard firstCard" Scale="1" Value="MyCards[0].Value" Suit="MyCards[0].Suit"></CardRender>
 	<CardRender Class="playerCard secondCard" Scale="1" Value="MyCards[1].Value" Suit="MyCards[1].Suit"></CardRender>
 }
 
-<RoundResultBanner NextRound="roundEndContinue" Result="roundEnd"/>
+<RoundResultBanner NextRound="roundEndContinue" Result="roundEnd" />
 
 @if (IsRoundRunning)
 {
 	<div class="tableCards">
-		<PotInfoDisplay Pots="Pots" IsCollapsed=false MinBet="MinBet"/>
+		<PotInfoDisplay Pots="Pots" IsCollapsed=false MinBet="MinBet" />
 		<div style="position: relative">
 			@for (int i = 0; i < 5; i++)
 			{
@@ -677,21 +684,21 @@ else
 </svg>
 
 <div id="game_info">
-	<p>Game ID: @GameInfo.ID</p>
-	<p>SB: @GameInfo.SmallBlind</p>
-	<p>BB: @GameInfo.BigBlind</p>
+	<p>Game ID: @GameInfo?.ID</p>
+	<p>SB: @GameInfo?.SmallBlind</p>
+	<p>BB: @GameInfo?.BigBlind</p>
 </div>
 
 <div id="players">
 	@foreach (var p in OtherPlayers)
 	{
-		<PlayerDisplay Player="p" 
-					DisplayCards=IsRoundRunning 
-					IsTurn="(WhoseTurn != null && WhoseTurn.Value.Name == p.Name)" 
-					Cards="(IsRoundRunning && roundEnd != null && roundEnd.Summaries.Where((pi) => pi.Player.Name == p.Name) is var pi && pi.Count() > 0 && pi.First().CardsVisible && pi.First().Cards.Length == 2) ? pi.First().Cards : null" 
-					Index="Array.IndexOf(OtherPlayers, p)"
-					Pots="Pots"/>
+		<PlayerDisplay Player="p"
+					   DisplayCards=IsRoundRunning
+					   IsTurn="(WhoseTurn != null && WhoseTurn.Value.Name == p.Name)"
+					   Cards="(IsRoundRunning && roundEnd != null && roundEnd.Summaries.Where((pi) => pi.Player.Name == p.Name) is var pi && pi.Count() > 0 && pi.First().CardsVisible && pi.First().Cards.Length == 2) ? pi.First().Cards : null"
+					   Index="Array.IndexOf(OtherPlayers, p)"
+					   Pots="Pots" />
 	}
 </div>
 
-<PlayerDisplay Player="MyPlayer" DisplayCards=false IsTurn="(WhoseTurn != null && WhoseTurn.Value.Name == PlayerName)" Pots="Pots" Index="null"/>
+<PlayerDisplay Player="MyPlayer" DisplayCards=false IsTurn="(WhoseTurn != null && WhoseTurn.Value.Name == PlayerName)" Pots="Pots" Index="null" />

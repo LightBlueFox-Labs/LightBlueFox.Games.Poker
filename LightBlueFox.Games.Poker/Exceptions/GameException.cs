@@ -1,5 +1,4 @@
-﻿using LightBlueFox.Connect.CustomProtocol.Serialization.CompositeSerializers;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
@@ -18,18 +17,12 @@ namespace LightBlueFox.Games.Poker.Exceptions
 		{
 		}
 
-		protected GameException(SerializationInfo info, StreamingContext context) : base(info, context)
-		{
-		}
-
 		protected GameException(string? message, Exception? innerException) : base(message, innerException)
 		{
 		}
 
 		public abstract SerializedExceptionInfo ToInfo();
 	}
-
-	[CompositeSerialize]
 	public struct SerializedExceptionInfo
 	{
 		public string Message;

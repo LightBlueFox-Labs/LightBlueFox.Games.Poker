@@ -1,4 +1,7 @@
 ﻿@page "/displaytest";
+@using LightBlueFox.Games.Poker.Cards
+@using LightBlueFox.Games.Poker.Player
+
 @code {
 	[Parameter]
 	public PlayerInfo Player { get; set; }
@@ -54,31 +57,31 @@
 		background-color: white;
 	}
 
-	.player_info p {
-		background-color: white;
-		border-radius: 5px 5px 0px 0px;
-	}
+		.player_info p {
+			background-color: white;
+			border-radius: 5px 5px 0px 0px;
+		}
 
-	.player_info:not(#player_you) {
-		transform: translate(-50%, -50%)
-	}
+		.player_info:not(#player_you) {
+			transform: translate(-50%, -50%)
+		}
 
-	.player_info h2 {
-		margin: 0px;
-		padding: 10px 60px 5px 25px;
-	}
+		.player_info h2 {
+			margin: 0px;
+			padding: 10px 60px 5px 25px;
+		}
 
-	.player_info .divider {
-		display: block;
-		width: 100%;
-		height: 0px;
-		border-top: 0.1px solid grey;
-	}
+		.player_info .divider {
+			display: block;
+			width: 100%;
+			height: 0px;
+			border-top: 0.1px solid grey;
+		}
 
-	.player_info p {
-		margin: 0px;
-		padding: 5px 60px 10px 25px;
-	}
+		.player_info p {
+			margin: 0px;
+			padding: 5px 60px 10px 25px;
+		}
 
 	.folded h2 {
 		background-color: grey !important;
@@ -91,10 +94,10 @@
 	}
 
 		.spectator h2, .spectator p, .spectator div {
-		border-radius: 5px 5px 0px 0px;
-		background: black !important;
-		color: white;
-	}
+			border-radius: 5px 5px 0px 0px;
+			background: black !important;
+			color: white;
+		}
 
 	.player_info .button {
 		position: absolute;
@@ -115,11 +118,11 @@
 		border-radius: 5px;
 	}
 
-	.stakeDisplay span{
-		display: table-cell;
-		padding: 10px;
-	}
-	
+		.stakeDisplay span {
+			display: table-cell;
+			padding: 10px;
+		}
+
 	.cardz {
 		position: relative;
 	}
@@ -142,25 +145,24 @@
 		transform: scale(0.3) translate( -30%, -160%) rotate(-7deg) !important;
 	}
 
-	
 
-	.disconnected{
+
+	.disconnected {
 		opacity: 0.5;
 	}
 
-	
 
-	.upper_part_player_display{
+
+	.upper_part_player_display {
 		position: relative;
 		background: white;
 		border-radius: 5px 5px 0px 0px;
 	}
 
-	.upper_part_player_display h2, object {
-		position: relative;
-		z-index: 1;
-
-	}
+		.upper_part_player_display h2, object {
+			position: relative;
+			z-index: 1;
+		}
 </style>
 
 <div class="player_info @(IsTurn ? "doesTurn" : "") @(Player.Status == PlayerStatus.Folded ? "folded" : "") @(Player.IsConnected ? "" : "disconnected") @(Player.Status == PlayerStatus.Spectating ? "spectator" : "")" id="player_@(Index == null ? "you" : Index)">
@@ -181,17 +183,17 @@
 		<h2>@Player.Name @(Index == null ? "(YOU)" : "")@(Player.Status == PlayerStatus.Spectating ? " [SPECTATOR]" : "")</h2>
 		<div class="player_bg" id="@(IsTurn ? "doesTurn_progressbar" : "")"></div>
 	</div>
-	
+
 	<span class="divider" />
 	<p>@Player.Stack in Chips</p>
 	@if (Player.CurrentStake > 0)
 	{
 		<div class="stakeDisplay">
-			@if(Pots != null && Pots.Length > 1 && !PotsCollapsed)
+			@if (Pots != null && Pots.Length > 1 && !PotsCollapsed)
 			{
-				for(int i = 0; i < Pots.Length; i++)
+				for (int i = 0; i < Pots.Length; i++)
 				{
-					@if (Pots[Pots.Length-(i+1)].IsPlaying(Player))
+					@if (Pots[Pots.Length - (i + 1)].IsPlaying(Player))
 					{
 						<div style="display: table-row">
 							<span class="pot_@i">@(i == 0 ? "Current Pot" : "Side pot " + i): @(Math.Clamp(Player.CurrentStake - Pots[Pots.Length - (i + 1)].StakeOffset, 0, Pots[Pots.Length - (i + 1)].MaxPotStake))</span>

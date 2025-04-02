@@ -1,7 +1,9 @@
-﻿using LightBlueFox.Games.Poker.Exceptions;
-using LightBlueFox.Games.Poker.PlayerHandles.Remote;
+﻿using LightBlueFox.Games.Poker.Cards;
+using LightBlueFox.Games.Poker.Exceptions;
+using LightBlueFox.Games.Poker.Player;
 using LightBlueFox.Games.Poker.Utils;
 using LightBlueFox.Games.Poker.Web.Pages;
+using System.Linq;
 
 namespace LightBlueFox.Games.Poker.Web.Controllers
 {
@@ -77,7 +79,7 @@ namespace LightBlueFox.Games.Poker.Web.Controllers
 			View.Rerender();
 		}
 
-		public override void Reconnected(PlayerInfo yourPlayer, Card[]? yourCards, PokerProtocol.GameInfo gameInfo, PlayerInfo[] otherPlayers, Card[]? tableCards, PotInfo[]? pots, int currentMinBet)
+		public override void Reconnected(PlayerInfo yourPlayer, Card[]? yourCards, GameInfo gameInfo, PlayerInfo[] otherPlayers, Card[]? tableCards, PotInfo[]? pots, int currentMinBet)
 		{
 			View.MyPlayer = yourPlayer;
 			View.MyCards = yourCards;
@@ -89,7 +91,7 @@ namespace LightBlueFox.Games.Poker.Web.Controllers
 			View.Rerender();
 		}
 
-		public override void StartSpectating(PlayerInfo yourPlayer, PokerProtocol.GameInfo gameInfo, PlayerInfo[] otherPlayers, Card[]? tableCards, PotInfo[]? pots, int currentMinBet)
+		public override void StartSpectating(PlayerInfo yourPlayer, GameInfo gameInfo, PlayerInfo[] otherPlayers, Card[]? tableCards, PotInfo[]? pots, int currentMinBet)
 		{
 			View.MyPlayer = yourPlayer;
 			View.MyCards = null;
@@ -109,7 +111,7 @@ namespace LightBlueFox.Games.Poker.Web.Controllers
 			View.Rerender();
 		}
 
-		public override void TellGameInfo(PokerProtocol.GameInfo gameInfo)
+		public override void TellGameInfo(GameInfo gameInfo)
 		{
 			View.Log($"Received Game info: Game ID {gameInfo.ID}, SB {gameInfo.SmallBlind}, BB {gameInfo.BigBlind}, currentState {gameInfo.GameState}");
 
@@ -195,13 +197,13 @@ namespace LightBlueFox.Games.Poker.Web.Controllers
 			return string.Join("-", strs);
 		}
 
-		public override void PlayersTurn(PokerProtocol.PlayersTurn pt)
+		public override void PlayersTurn(PlayerInfo player, bool isNewRound)
 		{
-			UpdatePlayerInfo(pt.Player);
-			View.Log($"It's {pt.Player.Name}'s turn.");
-			View.WhoseTurn = pt.Player;
+			UpdatePlayerInfo(player);
+			View.Log($"It's {player.Name}'s turn.");
+			View.WhoseTurn = player;
 			View.Rerender();
-			View.StartTurnTimer(pt.Player, Round.TURN_TIMEOUT);
+			View.StartTurnTimer(player, Round.TURN_TIMEOUT);
 		}
 
 		private bool isDisconnected = false;
@@ -224,7 +226,8 @@ namespace LightBlueFox.Games.Poker.Web.Controllers
 
 		public override void InformException(SerializedExceptionInfo exception)
 		{
-			switch(exception.Consequence) {
+			switch (exception.Consequence)
+			{
 				case ExceptionConsequence.Kicked:
 				case ExceptionConsequence.GameClose:
 					View.DisplayMainScreenError(exception.Message);
@@ -232,7 +235,7 @@ namespace LightBlueFox.Games.Poker.Web.Controllers
 				default:
 					View.DisplayExceptionBanner(exception.Message);
 					break;
-			}	
+			}
 		}
 
 		public override void RoundClosed()

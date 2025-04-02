@@ -2,7 +2,7 @@
 
 @code {
 	[Parameter]
-	public Action? NextRound { get; set; } 
+	public Action? NextRound { get; set; }
 
 	[Parameter]
 	public RoundResult? Result { get; set; }
@@ -55,11 +55,12 @@
 	}
 </style>
 
-@if(Result != null){
+@if (Result != null)
+{
 	<div id="gameEnd">
 		<h1 tabindex="-1">--- Round Ended ---</h1>
 		<div class="minitable">
-			@foreach (var card in Result.TableCards ?? new LightBlueFox.Games.Poker.Card[] { })
+			@foreach (var card in Result?.TableCards ?? [])
 			{
 				<CardRender Class="minicard" Value="@card.Value" Suit="@card.Suit"></CardRender>
 			}

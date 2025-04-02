@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using LightBlueFox.Games.Poker.Player;
 
 namespace LightBlueFox.Games.Poker.Utils
 {
@@ -39,7 +40,7 @@ namespace LightBlueFox.Games.Poker.Utils
 
 		public static int GetTotalPot(this PotInfo[] pots)
 		{
-			int total = 0; 
+			int total = 0;
 			foreach (var p in pots)
 			{
 				total += p.TotalPot;
@@ -52,7 +53,7 @@ namespace LightBlueFox.Games.Poker.Utils
 			foreach (var p in potInfos)
 			{
 				var pi = Array.IndexOf(p.PlayersInvolved, player);
-				if(pi >= 0)
+				if (pi >= 0)
 				{
 					p.PlayersInvolved[pi] = player;
 				}

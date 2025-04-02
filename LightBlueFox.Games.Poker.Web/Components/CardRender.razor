@@ -1,5 +1,6 @@
 ﻿@using LightBlueFox.Games.Poker;
 @using System.ComponentModel;
+@using LightBlueFox.Games.Poker.Cards;
 
 @code {
 
@@ -39,5 +40,4 @@
 }
 
 
-
-<object class="@Class" style="transform: scale(@Scale); @Style" data="/resc/cards/@(card_img_name.ToLowerInvariant())" type="image/svg+xml"/>
+<object class="@Class" style="transform: scale(@Scale, @Scale); @Style" data="/resc/cards/@(card_img_name.ToLowerInvariant())" type="image/svg+xml"/>

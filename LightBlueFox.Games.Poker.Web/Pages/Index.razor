@@ -1,12 +1,14 @@
 ﻿@page "/"
 @page "/error/{errorMsg}"
 @using LightBlueFox.Games.Poker;
+@using LightBlueFox.Games.Poker.Cards
 @using LightBlueFox.Games.Poker.Utils;
 @using System.Text.RegularExpressions;
+@using System.Globalization
 @inject NavigationManager NM;
 
-@code{
-	string name;
+@code {
+	string? name;
 
 	public const int MAX_NAME_LEN = 20;
 	public const int MAX_ID_LEN = 10;
@@ -15,7 +17,8 @@
 	public string? errorMsg { get; set; }
 
 	public string? id { get; set; } = null;
-	public string isErrorVisible {
+	public string isErrorVisible
+	{
 		get
 		{
 			return string.IsNullOrEmpty(errorMsg?.Trim()) ? "none" : "inline-block";
@@ -41,23 +44,23 @@
 
 	public Index()
 	{
+
 		DeckGenerator dg = new();
 		id = GameManager.getAnyRunningGame();
 		hand = dg.PopRandom(2);
 		table = dg.PopRandom(5);
 	}
 
-	private LightBlueFox.Games.Poker.Card[] hand;
-	private LightBlueFox.Games.Poker.Card[] table;
+	private Card[] hand;
+	private Card[] table;
 }
 
 
 <style>
 
 
-	body{
+	body {
 		background-color: darkgreen;
-		
 	}
 
 	.menu {
@@ -76,48 +79,48 @@
 		max-height: 60vw;
 	}
 
-	.menu * {
-		width: 100%;
-		text-align: center;
-		font-size: 30px;
-		margin-top: 15px;
-		margin-bottom: 15px;
-	}
+		.menu * {
+			width: 100%;
+			text-align: center;
+			font-size: 30px;
+			margin-top: 15px;
+			margin-bottom: 15px;
+		}
 
-	.menu input {
-		width: calc(100% - 20px);
-		text-align: left;
-		padding: 10px;
-		border: 0px solid black;
-		border-radius: 5px;
-		background: #dedede
-	}
+		.menu input {
+			width: calc(100% - 20px);
+			text-align: left;
+			padding: 10px;
+			border: 0px solid black;
+			border-radius: 5px;
+			background: #dedede
+		}
 
-	.menu input:hover {
-		background-color: #cecece;
-	}
+			.menu input:hover {
+				background-color: #cecece;
+			}
 
-	.menu button {
-		width: 40%;
-		margin-left: 30%;
-		background-color: green;
-		border: 0px solid black;
-		color: white;
-		padding: 30px 10px;
-		border-radius: 5px;
-		transition: ease-out background 0.2s;
-	}
+		.menu button {
+			width: 40%;
+			margin-left: 30%;
+			background-color: green;
+			border: 0px solid black;
+			color: white;
+			padding: 30px 10px;
+			border-radius: 5px;
+			transition: ease-out background 0.2s;
+		}
 
-	
 
-	.menu button:enabled:hover{
-		background-color: darkgreen;
-	}	
-	
-	.menu button:disabled {
-		background-color: grey;
-		color: lightgrey;
-	}
+
+			.menu button:enabled:hover {
+				background-color: darkgreen;
+			}
+
+			.menu button:disabled {
+				background-color: grey;
+				color: lightgrey;
+			}
 
 	.error {
 		display: inline-block;
@@ -130,7 +133,7 @@
 		border-radius: 15px;
 	}
 
-	.card{
+	.card {
 		width: 230px;
 		position: absolute;
 		top: 50%;
@@ -139,11 +142,11 @@
 		transition: width 0.5s;
 	}
 
-	.card:hover {
-		width: 250px;
-	}
+		.card:hover {
+			width: 250px;
+		}
 
-	.h0{
+	.h0 {
 		transform: translate(-180%, -50%) rotate(-30deg) !important;
 	}
 
@@ -159,7 +162,7 @@
 		transform: translate(50%, 10%) rotate(15deg) !important;
 	}
 
-	.table{
+	.table {
 		transition: width 0.5s;
 		position: absolute;
 		width: 130px;
@@ -167,12 +170,13 @@
 		top: 11%;
 		z-index: -1;
 	}
-	.table:hover{
-		width: 160px;
-	}
 
-	.t0{
-		transform: translate(-20%,10%) rotate(-20deg) !important;	
+		.table:hover {
+			width: 160px;
+		}
+
+	.t0 {
+		transform: translate(-20%,10%) rotate(-20deg) !important;
 	}
 
 	.t1 {
@@ -191,7 +195,7 @@
 		transform: translate(20%,-10%) rotate(20deg) !important;
 	}
 
-	#footer{
+	#footer {
 		background: black;
 		color: white;
 		font-size: 11px;
@@ -203,24 +207,26 @@
 		text-align: right;
 	}
 
-	#footer a{
-		color: orange;
-	}
+		#footer a {
+			color: orange;
+		}
 
-	#game_id_div{
+	#game_id_div {
 		width: 100%;
 		display: table;
 		text-align: left;
 	}
-	#game_id_div #game_id_div span{
-		display: table-cell;
-		width: 30%;
-	}
-	#game_id_div input {
-		display: table-cell;
-		width: 65%;
-		margin-left: 5%;
-	}
+
+		#game_id_div #game_id_div span {
+			display: table-cell;
+			width: 30%;
+		}
+
+		#game_id_div input {
+			display: table-cell;
+			width: 65%;
+			margin-left: 5%;
+		}
 </style>
 
 
@@ -231,32 +237,32 @@
 	</div>
 	<h1 style="font-size: 50px">Online Poker Game</h1>
 	<p>Your Name: </p>
-	<Microsoft.AspNetCore.Components.Forms.InputText @bind-Value="name" @oninput="((e) => { name = e.Value?.ToString() ?? string.Empty; updateValid();})" type="text" name="name"/>
-	
+	<Microsoft.AspNetCore.Components.Forms.InputText @bind-Value="name" @oninput="((e) => { name = e.Value?.ToString() ?? string.Empty; updateValid();})" type="text" name="name" />
+
 	<div id="game_id_div">
 		<span>Game ID:</span>
 		<Microsoft.AspNetCore.Components.Forms.InputText @bind-Value="id" @oninput="((e) => {id = e.Value?.ToString() ?? string.Empty; updateValid();})" type="text" name="id" />
 	</div>
-	
+
 	<button disabled="@(!IsInputValid)" @onclick="joinGame">Join Game</button>
 
-	
-	
+
+
 </div>
 
 
 <CardRender Class="card b1"></CardRender>
 <CardRender Class="card b2"></CardRender>
 
-@for(int i = 0; i < 2; i++)
+@for (int i = 0; i < 2; i++)
 {
 	<CardRender Class="@("card h"+i)" Suit="hand[i].Suit" Value="hand[i].Value"></CardRender>
 }
 
-@for(int i = 0; i < 5; i++)
+@for (int i = 0; i < 5; i++)
 {
 	<CardRender Class="@("table t"+i)" Suit="table[i].Suit" Value="table[i].Value"></CardRender>
-} 
+}
 
 
 <div id="footer">

@@ -1,4 +1,4 @@
-﻿using LightBlueFox.Games.Poker;
+﻿using LightBlueFox.Games.Poker.Player;
 
 namespace LightBlueFox.Games.Poker.Web
 {
@@ -13,19 +13,19 @@ namespace LightBlueFox.Games.Poker.Web
 			{
 				runningGamesByID.Add(gameID, new Game(gameID));
 			}
-			
+
 			var game = runningGamesByID[gameID];
 			game.AddPlayer(player);
 		}
 
 		public static void TryStartRound(string gameID)
 		{
-			if (CanStart(gameID)) Task.Run(() => { runningGamesByID[gameID].startRound(); });
+			if (CanStart(gameID)) Task.Run(() => { runningGamesByID[gameID].StartRound(); });
 		}
 
 		public static bool CanStart(string gameID)
 		{
-			var res =  runningGamesByID.ContainsKey(gameID) && runningGamesByID[gameID].State != GameState.InRound && runningGamesByID[gameID].Players.Count > 1;
+			var res = runningGamesByID.ContainsKey(gameID) && runningGamesByID[gameID].State != GameState.InRound && runningGamesByID[gameID].Players.Count > 1;
 			return res;
 		}
 

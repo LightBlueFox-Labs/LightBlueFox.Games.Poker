@@ -1,4 +1,4 @@
-﻿using LightBlueFox.Games.Poker;
+﻿using LightBlueFox.Games.Poker.Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,7 +18,7 @@ namespace Tests.LightBlueFox.Games.Poker
 
 		};
 
-		private static PlayerInfo[] players = {};
+		private static PlayerInfo[] players = { };
 
 		private void cleanupPlayers()
 		{
@@ -60,7 +60,7 @@ namespace Tests.LightBlueFox.Games.Poker
 			Assert.IsTrue(p.GetMaxBet(dummyPlayers[2]) == 800);
 			Assert.IsTrue(p.GetMaxBet(dummyPlayers[0]) == -200);
 			Assert.IsTrue(p.GetMaxBet(dummyPlayers[1]) == 800);
-			
+
 
 		}
 	}
