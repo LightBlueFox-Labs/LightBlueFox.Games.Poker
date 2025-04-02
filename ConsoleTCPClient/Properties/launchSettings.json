@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "ConsoleTCPClient": {
-      "commandName": "Project",
-      "commandLineArgs": "localhost 12332"
-    }
-  }
-}
