@@ -46,7 +46,7 @@ namespace LightBlueFox.Games.Poker.Cards
         }
 
         public static CardValue HighestValue(this IEnumerable<Card> cards)
-            => cards.Any() ? cards.Order().FirstOrDefault().Value : throw new ArgumentException("Empty cards!");
+            => cards.Any() ? cards.OrderDescending().FirstOrDefault().Value : throw new ArgumentException("Empty cards!");
 
         public static bool ContainsCardValue(this IEnumerable<Card> cards, CardValue val)
             => cards.Any(x => x.Value == val);
