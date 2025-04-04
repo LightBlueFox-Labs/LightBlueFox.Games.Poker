@@ -16,8 +16,7 @@ namespace LightBlueFox.Games.Poker.Cards
 
         public static IEnumerable<Card> GetLongestSequence(this IEnumerable<Card> cards, int? minLength = null)
         {
-            cards = cards.OrderDescending();
-            cards.DistinctBy(c => c.Value);
+            cards = cards.OrderDescending().DistinctBy(c => c.Value);
 
             int bestSequenceLength = -1;
             int bestSequenceStart = -1;
@@ -26,9 +25,9 @@ namespace LightBlueFox.Games.Poker.Cards
             CardValue? lastValue = null;
             foreach (var (card, index) in cards.Select((c, i) => (c, i)))
             {
-                if (lastValue == null || card.Value - lastValue == 1)
+                if (lastValue == null || card.Value - lastValue == -1)
                 {
-                    int len = sequenceStart + 1 - index;
+                    int len = index - sequenceStart + 1;
                     if (bestSequenceLength < 0 || len > bestSequenceLength)
                     {
                         bestSequenceLength = len;
@@ -42,7 +41,7 @@ namespace LightBlueFox.Games.Poker.Cards
                 lastValue = card.Value;
             }
 
-            return bestSequenceStart < 0 && (minLength == null || bestSequenceLength >= minLength) ? [] : cards.Skip(bestSequenceStart).Take(bestSequenceLength);
+            return bestSequenceStart >= 0 && (minLength == null || bestSequenceLength >= minLength) ? cards.Skip(bestSequenceStart).Take(bestSequenceLength) : [];
 
         }
 
