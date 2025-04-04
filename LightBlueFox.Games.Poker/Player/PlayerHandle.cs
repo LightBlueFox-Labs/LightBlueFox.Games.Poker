@@ -1,10 +1,10 @@
 ﻿using LightBlueFox.Games.Poker.Cards;
+using LightBlueFox.Games.Poker.Evaluation;
 using LightBlueFox.Games.Poker.Exceptions;
-using LightBlueFox.Games.Poker.Utils;
 
 namespace LightBlueFox.Games.Poker.Player
 {
-	public abstract class PlayerHandle(string name)
+    public abstract class PlayerHandle(string name)
 	{
 		public PlayerInfo Player { get { return _player; } }
 		private PlayerInfo _player = new(name, 0);
