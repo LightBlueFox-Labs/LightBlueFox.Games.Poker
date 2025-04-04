@@ -1,4 +1,5 @@
-﻿using LightBlueFox.Games.Poker.Player;
+﻿using LightBlueFox.Games.Poker;
+using LightBlueFox.Games.Poker.Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
