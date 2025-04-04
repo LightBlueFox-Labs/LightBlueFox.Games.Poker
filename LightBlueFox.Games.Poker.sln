@@ -9,8 +9,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests.LightBlueFox.Games.Po
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LightBlueFox.Games.Poker.Web", "LightBlueFox.Games.Poker.Web\LightBlueFox.Games.Poker.Web.csproj", "{92AC59B9-BC50-40AB-A55E-6419542FE1F7}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Console", "Console", "{EAC0D45C-4CAF-47C2-95DB-5CE6E61E59E7}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core", "Core", "{CC78B585-345F-439E-8D75-A6135A219291}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{CF57FCEC-396E-4AD8-9CDC-6D120393F27F}"
