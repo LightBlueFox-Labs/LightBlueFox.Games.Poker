@@ -1,13 +1,13 @@
 ﻿using LightBlueFox.Games.Poker.Cards;
+using LightBlueFox.Games.Poker.Evaluation;
 using LightBlueFox.Games.Poker.Exceptions;
 using LightBlueFox.Games.Poker.Player;
-using LightBlueFox.Games.Poker.Utils;
 using LightBlueFox.Games.Poker.Web.Pages;
 using System.Linq;
 
 namespace LightBlueFox.Games.Poker.Web.Controllers
 {
-	public class GameController : PlayerHandle
+    public class GameController : PlayerHandle
 	{
 		public GameView View { get; private set; }
 
@@ -15,7 +15,7 @@ namespace LightBlueFox.Games.Poker.Web.Controllers
 		{
 			get
 			{
-				return !View.IsRoundRunning && Player.Stack >= View.GameInfo.BigBlind && View.OtherPlayers.Any((p) =>
+				return !View.IsRoundRunning && Player.Stack >= View.GameInfo!.BigBlind && View.OtherPlayers.Any((p) =>
 				{
 					return p.IsConnected && p.Stack >= View.GameInfo.BigBlind;
 				});
@@ -158,7 +158,7 @@ namespace LightBlueFox.Games.Poker.Web.Controllers
 				View.Log("[{0}]: (Side)pot: {1}", Player.Name, pot.Pot.TotalPot);
 				foreach (var i in pot.PlayerInfos)
 				{
-					View.Log($"     [{i.Player.Name}{(i.Player.Name == Player.Name ? " (YOU)" : "")}] {(i.HasWon ? "won (+" + (i.ReceivedCoins - i.Player.CurrentStake) : "lost (-" + i.Player.CurrentStake)} coins). {(i.CardsVisible ? "Cards: " + PrintCardCollection(i.Cards) : "")}{(i.Eval.Length == 1 ? ", eval: " + i.Eval[0] : "")}");
+					View.Log($"     [{i.Player.Name}{(i.Player.Name == Player.Name ? " (YOU)" : "")}] {(i.HasWon ? "won (+" + (i.ReceivedCoins - i.Player.CurrentStake) : "lost (-" + i.Player.CurrentStake)} coins). {(i.Cards is not null ? "Cards: " + PrintCardCollection(i.Cards) : "")}{(i.Evaluation is not null ? ", eval: " + i.Evaluation : "")}");
 				}
 
 			}

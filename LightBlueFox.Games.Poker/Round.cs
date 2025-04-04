@@ -1,11 +1,11 @@
 ﻿using LightBlueFox.Games.Poker.Cards;
+using LightBlueFox.Games.Poker.Evaluation;
 using LightBlueFox.Games.Poker.Exceptions;
 using LightBlueFox.Games.Poker.Player;
-using LightBlueFox.Games.Poker.Utils;
 
 namespace LightBlueFox.Games.Poker
 {
-	public class Round
+    public class Round
 	{
 		public const int TURN_TIMEOUT = 250000;
 		private readonly static int[] _DEALS = { 0, 3, 1, 1 };

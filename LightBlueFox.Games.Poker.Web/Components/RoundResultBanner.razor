@@ -1,4 +1,4 @@
-﻿<h3>RoundResultBanner</h3>
+﻿@using LightBlueFox.Games.Poker.Evaluation
 
 @code {
 	[Parameter]
@@ -65,7 +65,7 @@
 				<CardRender Class="minicard" Value="@card.Value" Suit="@card.Suit"></CardRender>
 			}
 		</div>
-		@if (Result.PotResults.Length == 1)
+		@if (Result!.PotResults.Length == 1)
 		{
 			@foreach (var playerInfo in Result.PotResults[0].PlayerInfos)
 			{
@@ -73,13 +73,13 @@
 				@if (playerInfo.HasWon)
 				{
 					<div class="winner">
-						<p>@playerInfo.Player.Name won <span>+@(playerInfo.ReceivedCoins - playerInfo.Player.CurrentStake)</span>  (@(playerInfo.Eval.Length > 0 ? ("with " + playerInfo.Eval[0].HandType + "") : "all others folded"))</p>
+						<p>@playerInfo.Player.Name won <span>+@(playerInfo.ReceivedCoins - playerInfo.Player.CurrentStake)</span>  (@(playerInfo.Evaluation is not null ? ("with " + playerInfo.Evaluation.Type.Name + "") : "all others folded"))</p>
 					</div>
 				}
 				else
 				{
 					<div class="loser">
-						<p>@playerInfo.Player.Name lost <span>-@playerInfo.Player.CurrentStake</span> (@(playerInfo.Eval.Length == 0 || playerInfo.HasFolded ? "folded" : playerInfo.Eval[0].HandType))</p>
+						<p>@playerInfo.Player.Name lost <span>-@playerInfo.Player.CurrentStake</span> (@(playerInfo.Evaluation is null || playerInfo.HasFolded ? "folded" : playerInfo.Evaluation.Type.Name))</p>
 					</div>
 				}
 
@@ -96,13 +96,13 @@
 					@if (playerInfo.HasWon)
 					{
 						<div class="winner">
-							<p>@playerInfo.Player.Name won <span>+@(playerInfo.ReceivedCoins - (Result.PotResults[i].Pot.Stake))</span>  (@(playerInfo.Eval.Length > 0 ? ("with " + playerInfo.Eval[0].HandType + "") : "all others folded"))</p>
+							<p>@playerInfo.Player.Name won <span>+@(playerInfo.ReceivedCoins - (Result.PotResults[i].Pot.Stake))</span>  (@(playerInfo.Evaluation is not null ? ("with " + playerInfo.Evaluation.Type.Name + "") : "all others folded"))</p>
 						</div>
 					}
 					else
 					{
 						<div class="loser">
-							<p>@playerInfo.Player.Name lost <span>-@(Result.PotResults[i].Pot.Stake)</span> (@(playerInfo.Eval.Length == 0 || playerInfo.HasFolded ? "folded" : playerInfo.Eval[0].HandType))</p>
+							<p>@playerInfo.Player.Name lost <span>-@(Result.PotResults[i].Pot.Stake)</span> (@(playerInfo.Evaluation is null || playerInfo.HasFolded ? "folded" : playerInfo.Evaluation.Type.Name))</p>
 						</div>
 					}
 

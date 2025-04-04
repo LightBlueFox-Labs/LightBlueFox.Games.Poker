@@ -1,11 +1,10 @@
 ﻿using LightBlueFox.Games.Poker.Exceptions;
 using LightBlueFox.Games.Poker.Player;
-using LightBlueFox.Games.Poker.Utils;
 using System.Linq;
 
 namespace LightBlueFox.Games.Poker
 {
-	public class Game(string id, int bigBlind = 10, int smallBlind = 5)
+    public class Game(string id, int bigBlind = 10, int smallBlind = 5)
 	{
 		public readonly string ID = id;
 		public readonly int BigBlind = bigBlind;
