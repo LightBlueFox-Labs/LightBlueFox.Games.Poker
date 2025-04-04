@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 
 # https://hub.docker.com/_/microsoft-dotnet
 ARG NUGET_USER
@@ -19,7 +19,7 @@ COPY LightBlueFox.Games.Poker.Web/. .
 RUN dotnet publish LightBlueFox.Games.Poker.Web.csproj -c release -o /app
 
 # final stage/image
-FROM mcr.microsoft.com/dotnet/aspnet:7.0.0
+FROM mcr.microsoft.com/dotnet/aspnet:8.0.0
 EXPOSE 80
 WORKDIR /app
 COPY --from=build /app .
