@@ -8,6 +8,9 @@ namespace LightBlueFox.Games.Poker.Cards
 {
     public static class CardExtentions
     {
+        public static string Print(this IEnumerable<Card> cards, string seperator = "")
+            => cards.Select(c => c.ToString()).Aggregate((s, t) => s + seperator + t);
+
         public static bool SameSuit(this IEnumerable<Card> cards)
             => !cards.Any() || cards.All(c => cards.First().Suit == c.Suit);
 
