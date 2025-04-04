@@ -9,7 +9,7 @@ namespace LightBlueFox.Games.Poker.Evaluation
 	
 	public delegate int Compare(IEnumerable<Card> c1, IEnumerable<Card> c2);
 
-	
+
 	public class PokerHandType : IComparable<PokerHandType>
 	{
 		public readonly string Name;
@@ -23,11 +23,34 @@ namespace LightBlueFox.Games.Poker.Evaluation
 			Comparator = comparator;
 		}
 
+
+		public bool IsAnyStraight
+			=> this == Straight || this == StraightFlush || this == RoyalFlush;
+
+		public override string ToString() => Name;
+		public static (PokerHandType Type, Card[] Cards) Evaluate(IEnumerable<Card> cards)
+			=> TypesDescending
+			.Select(t => (t, t.IsOfType(cards)))
+			.FirstOrDefault(c => c.Item2 is not null) is (PokerHandType type, IEnumerable<Card> c) ? new(type, [.. c])
+			: throw new InvalidOperationException("No matching hand found!");
+
+		private static Dictionary<PokerHandType, int>? _handTyleRankings;
+		private static Dictionary<PokerHandType, int> HandTypeRankings => _handTyleRankings ??= TypesDescending.Select((h, i) => (h, i)).ToDictionary();
+
+		
+
+		public int CompareTo(PokerHandType? other)
+		{
+			ArgumentNullException.ThrowIfNull(other, "No reasonable comparison for null type!");
+			// Lower Ranking => Stronger Hand!
+			return -1 * HandTypeRankings[this].CompareTo(HandTypeRankings[other]);
+		}
+
 		#region Hand Implementations
 		public readonly static PokerHandType HighCard = new(
 				"High Card",
-				// Always Matches. Returns up to 5 cards, highest to lowest.
-				(c) => c.OrderByDescending(c => c.Value).Take(5),
+				// Always Matches. Return highest card.
+				(c) => [c.OrderByDescending(c => c.Value).First()],
 				// Orders again to be sure.
 				(c1, c2) =>
 				{
@@ -57,13 +80,13 @@ namespace LightBlueFox.Games.Poker.Evaluation
 				(IEnumerable<Card> cards) =>
 					cards.GroupBy(c => c.Value)
 					.Where(s => s.Count() == 2)
-					.OrderByDescending(s => s.First().Value) is var grps && 
-						grps.Count() >= 2 ? 
-						grps.Take(2).SelectMany(g => g) 
+					.OrderByDescending(s => s.First().Value) is var grps &&
+						grps.Count() >= 2 ?
+						grps.Take(2).SelectMany(g => g)
 						: null
 				,
-				// This should also handle situations where the higher pair is the same strenght, but the lower one isn't.
-				(c1, c2) => c1.Aggregate(0, (v, c) => v + (int)c.Value).CompareTo(c2.Aggregate(0, (v, c) => v + (int)c.Value))
+				(c1, c2) => c1.OrderDescending().ElementAt(0).Value.CompareTo(c2.OrderDescending().ElementAt(0).Value) is int bpRes && bpRes != 0 ? bpRes 
+				: c1.OrderDescending().ElementAt(2).Value.CompareTo(c2.OrderDescending().ElementAt(2).Value)
 		);
 
 		public readonly static PokerHandType ThreeOfAKind = new(
@@ -76,7 +99,7 @@ namespace LightBlueFox.Games.Poker.Evaluation
 				,
 				(c1, c2) => c1.HighestValue().CompareTo(c2.HighestValue())
 		);
-		
+
 		/// <summary>
 		/// A straight. Will always be ordered descending.
 		/// </summary>
@@ -84,6 +107,7 @@ namespace LightBlueFox.Games.Poker.Evaluation
 				"Straight",
 				(IEnumerable<Card> cards) =>
 				{
+					//throw new NotImplementedException("This is incorrectly implemented. GetLongestSequence returns incorrect values (single card instead of sequence!). Also edge case where cards are 6 5 4 3 2 1 A ");
 					IOrderedEnumerable<Card>? sequence = cards.GetLongestSequence(4).OrderDescending();
 					if (sequence == null) return null;
 
@@ -96,20 +120,33 @@ namespace LightBlueFox.Games.Poker.Evaluation
 				.CompareTo(c2.Select(c => c.Value).OrderDescending().SequenceEqual([CardValue.Ace, CardValue.Five, CardValue.Four, CardValue.Three, CardValue.Two]) ? CardValue.Five : c2.HighestValue())
 		);
 
+		public readonly static PokerHandType Flush = new(
+			"Flush",
+			(IEnumerable<Card> cards) =>
+				new Suit[4] { Suit.Clubs, Suit.Spades, Suit.Diamonds, Suit.Hearts }.Select(
+						s =>
+							cards.OrderByDescending(c => c.Value).Where(c => c.Suit == s)
+						).Where(s => s.Count() >= 5)
+			.OrderByDescending(s => s.HighestValue())
+			.FirstOrDefault()?
+			.Take(5)
+			,
+			(c1, c2) => c1.HighestValue().CompareTo(c2.HighestValue())
+		);
+
 		public readonly static PokerHandType FullHouse = new(
 				"Full House",
+
 				(IEnumerable<Card> cards) =>
 					cards.GroupBy(c => c.Value)
-					.GroupBy(s => s.Count())
-					.ToDictionary(g => g.Key) is var dict
-					&& dict.GetValueOrDefault(3)?.OrderByDescending(s => s.First().Value).First() is IEnumerable<Card> big
-					&& dict.GetValueOrDefault(3)?.OrderByDescending(s => s.First().Value).First() is IEnumerable<Card> small
-					? big.Concat(small).ToList() : null
+				.OrderByDescending(g => g.First().Value) is var groups
+				&& groups.FirstOrDefault(g => g.Count() >= 3) is IGrouping<CardValue, Card> big
+				&& groups.FirstOrDefault(g => g.Key != big.Key && g.Count() >= 2) is IGrouping<CardValue, Card> small
+				? big.Concat(small).ToList() : null,
 
-				,
 				(c1, c2) => c1.GroupBy(c => c.Value).GroupBy(s => s.Count()).ToDictionary(g => g.Key) is var d1
 							&& c2.GroupBy(c => c.Value).GroupBy(s => s.Count()).ToDictionary(g => g.Key) is var d2
-							? d1[3].First().Key.CompareTo(d2[3].First().Key) is int compbig && compbig != 0 ? compbig : d1[2].First().Key.CompareTo(d2[3].First().Key)
+							? d1[3].First().Key.CompareTo(d2[3].First().Key) is int compbig && compbig != 0 ? compbig : d1[2].First().Key.CompareTo(d2[2].First().Key)
 							: throw new InvalidOperationException("Failed to group when comparing full houses!")
 		);
 
@@ -127,10 +164,10 @@ namespace LightBlueFox.Games.Poker.Evaluation
 		public readonly static PokerHandType StraightFlush = new(
 				name: "Straight Flush",
 				isOfType: (IEnumerable<Card> cards) =>
-					new Suit[4] { Suit.Clubs, Suit.Spades, Suit.Diamonds, Suit.Hearts }.Select(
+					new Suit[4] { Suit.Hearts, Suit.Clubs, Suit.Spades, Suit.Diamonds }.Select(
 						s =>
-							Straight.IsOfType(cards.Where(c => c.Suit == s)) ?? []
-						).OrderByDescending(s => s.First().Value)
+							Straight.IsOfType(cards.Where(c => c.Suit == s))
+						).Where(s => s is not null).OrderByDescending(s => s!.First().Value)
 					.FirstOrDefault()
 				,
 				comparator: (c1, c2) => Straight.Comparator(c1, c2)
@@ -148,17 +185,7 @@ namespace LightBlueFox.Games.Poker.Evaluation
 		);
 		#endregion
 
-
-		private static Dictionary<PokerHandType, int>? _handStrengths;
-		private static Dictionary<PokerHandType, int> HandStrengths => _handStrengths ??= TypesDescending.Select((h, i) => (h, i)).ToDictionary(); 
-
-		public readonly static PokerHandType[] TypesDescending = [RoyalFlush, StraightFlush, FourOfAKind, FullHouse, Straight, ThreeOfAKind, TwoPair, Pair, HighCard];
-
-		public int CompareTo(PokerHandType? other)
-		{
-			ArgumentNullException.ThrowIfNull(other, "No reasonable comparison for null type!");
-			return HandStrengths[this].CompareTo(HandStrengths[other]);
-		}
+		public readonly static PokerHandType[] TypesDescending = [RoyalFlush, StraightFlush, FourOfAKind, FullHouse, Flush, Straight, ThreeOfAKind, TwoPair, Pair, HighCard];
 	}
 
 	
