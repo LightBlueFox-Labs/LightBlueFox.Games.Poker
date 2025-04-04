@@ -10,7 +10,7 @@
 			Value = v; Suit = s;
 		}
 
-		private static Dictionary<char, CardValue> valueChars = new()
+		private readonly static Dictionary<char, CardValue> ValueChars = new()
 		{
 			{'2', CardValue.Two },
 			{'3', CardValue.Three },
@@ -27,7 +27,9 @@
 			{'A', CardValue.Ace },
 		};
 
-		private static Dictionary<char, Suit> suitChars = new()
+		private static IReadOnlyDictionary<CardValue, char> CharsByValue => ValueChars.ToDictionary(kvp => kvp.Value, kvp => kvp.Key);
+
+		private readonly static Dictionary<char, Suit> SuitChars = new()
 		{
 			{'H', Suit.Hearts },
 			{'D', Suit.Diamonds },
@@ -35,16 +37,18 @@
 			{'S', Suit.Spades },
 		};
 
+		private static IReadOnlyDictionary<Suit, char> CharsBySuit => SuitChars.ToDictionary(kvp => kvp.Value, kvp => kvp.Key);
+
 		public Card(string id)
 		{
 			if (id == null || id.Length != 2) throw new ArgumentException("String for card needs to be length 2: One char for the value, one for the suit. Example: 4H = Four of Hearts.");
 			char[] chars = id.ToCharArray();
 
-			if (!suitChars.ContainsKey(chars[1])) throw new ArgumentException("No suit known with " + chars[1] + "!");
-			if (!valueChars.ContainsKey(chars[0])) throw new ArgumentException("No card value known with " + chars[0] + "!");
+			if (!SuitChars.ContainsKey(chars[1])) throw new ArgumentException("No suit known with " + chars[1] + "!");
+			if (!ValueChars.ContainsKey(chars[0])) throw new ArgumentException("No card value known with " + chars[0] + "!");
 
-			Value = valueChars[chars[0]];
-			Suit = suitChars[chars[1]];
+			Value = ValueChars[chars[0]];
+			Suit = SuitChars[chars[1]];
 		}
 
 		public bool Equals(Card other)
@@ -75,6 +79,10 @@
 		public int CompareTo(Card other)
 		{
 			return Value.CompareTo(other.Value);
+		}
+		public override string ToString()
+		{
+			return "" + CharsByValue[Value] + CharsBySuit[Suit];
 		}
 	}
 	public enum CardValue
