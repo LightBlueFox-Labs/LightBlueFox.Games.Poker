@@ -73,13 +73,13 @@
 				@if (playerInfo.HasWon)
 				{
 					<div class="winner">
-						<p>@playerInfo.Player.Name won <span>+@(playerInfo.ReceivedCoins - playerInfo.Player.CurrentStake)</span>  (@(playerInfo.Evaluation is not null ? ("with " + playerInfo.Evaluation.Type.Name + "") : "all others folded"))</p>
+						<p>@playerInfo.Player.Name won <span>+@(playerInfo.ReceivedCoins - playerInfo.Player.CurrentStake)</span>  (@(playerInfo.Evaluation is not null ? ("with " + playerInfo.Evaluation + "") : "all others folded"))</p>
 					</div>
 				}
 				else
 				{
 					<div class="loser">
-						<p>@playerInfo.Player.Name lost <span>-@playerInfo.Player.CurrentStake</span> (@(playerInfo.Evaluation is null || playerInfo.HasFolded ? "folded" : playerInfo.Evaluation.Type.Name))</p>
+						<p>@playerInfo.Player.Name lost <span>-@playerInfo.Player.CurrentStake</span> (@(playerInfo.Evaluation is null || playerInfo.HasFolded ? "folded" : playerInfo.Evaluation))</p>
 					</div>
 				}
 
@@ -96,13 +96,13 @@
 					@if (playerInfo.HasWon)
 					{
 						<div class="winner">
-							<p>@playerInfo.Player.Name won <span>+@(playerInfo.ReceivedCoins - (Result.PotResults[i].Pot.Stake))</span>  (@(playerInfo.Evaluation is not null ? ("with " + playerInfo.Evaluation.Type.Name + "") : "all others folded"))</p>
+							<p>@playerInfo.Player.Name won <span>+@(playerInfo.ReceivedCoins - (Result.PotResults[i].Pot.Stake))</span>  (@(playerInfo.Evaluation is not null ? ("with " + playerInfo.Evaluation + "") : "all others folded"))</p>
 						</div>
 					}
 					else
 					{
 						<div class="loser">
-							<p>@playerInfo.Player.Name lost <span>-@(Result.PotResults[i].Pot.Stake)</span> (@(playerInfo.Evaluation is null || playerInfo.HasFolded ? "folded" : playerInfo.Evaluation.Type.Name))</p>
+							<p>@playerInfo.Player.Name lost <span>-@(Result.PotResults[i].Pot.Stake)</span> (@(playerInfo.Evaluation is null || playerInfo.HasFolded ? "folded" : playerInfo.Evaluation))</p>
 						</div>
 					}
 

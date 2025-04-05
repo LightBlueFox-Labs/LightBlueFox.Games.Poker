@@ -8,7 +8,10 @@ namespace LightBlueFox.Games.Poker.Cards
 {
     public static class CardExtentions
     {
-        public static string Print(this IEnumerable<Card> cards, string seperator = "")
+        public static string PluralName(this CardValue value)
+            => value == CardValue.Six ? "Sixes" : value + "s";
+
+		public static string Print(this IEnumerable<Card> cards, string seperator = "")
             => cards.Select(c => c.ToString()).Aggregate((s, t) => s + seperator + t);
 
         public static bool SameSuit(this IEnumerable<Card> cards)

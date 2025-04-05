@@ -36,7 +36,7 @@ namespace LightBlueFox.Games.Poker.Evaluation
 
 		public override string ToString()
 		{
-			return Type.Name;
+			return Type.CustomToString?.Invoke(Hand) ?? Type.Name;
 		}
 	}
 }

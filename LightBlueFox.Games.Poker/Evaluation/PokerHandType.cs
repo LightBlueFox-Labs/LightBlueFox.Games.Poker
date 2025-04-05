@@ -15,17 +15,20 @@ namespace LightBlueFox.Games.Poker.Evaluation
 		public readonly string Name;
 		public readonly IsHandOfType IsOfType;
 		public readonly Compare Comparator;
+		public readonly Func<IEnumerable<Card>, string>? CustomToString;
 
-		private PokerHandType(string name, IsHandOfType isOfType, Compare comparator)
+
+		private PokerHandType(string name, IsHandOfType isOfType, Compare comparator, Func<IEnumerable<Card>, string>? toString = null)
 		{
 			Name = name;
 			IsOfType = isOfType;
 			Comparator = comparator;
+			CustomToString = toString;
 		}
 
 
 		public bool IsAnyStraight
-			=> this == Straight || this == StraightFlush || this == RoyalFlush;
+			=> this == Straight || this == StraightFlush;
 
 		public override string ToString() => Name;
 		public static (PokerHandType Type, Card[] Cards) Evaluate(IEnumerable<Card> cards)
@@ -61,7 +64,8 @@ namespace LightBlueFox.Games.Poker.Evaluation
 						if (c1.ElementAtOrDefault(i).CompareTo(c1.ElementAtOrDefault(i)) is int res && res != 0) return res;
 					}
 					return 0;
-				}
+				},
+				(c) => "High Card (" + c.HighestValue() + ")"
 		);
 
 		public readonly static PokerHandType Pair = new(
@@ -72,7 +76,8 @@ namespace LightBlueFox.Games.Poker.Evaluation
 					.OrderByDescending(s => s.First().Value)
 					.FirstOrDefault()
 				,
-				(c1, c2) => c1.HighestValue().CompareTo(c2.HighestValue())
+				(c1, c2) => c1.HighestValue().CompareTo(c2.HighestValue()),
+				(c) => "Pair of " + c.First().Value.PluralName()
 		);
 
 		public readonly static PokerHandType TwoPair = new(
@@ -86,7 +91,8 @@ namespace LightBlueFox.Games.Poker.Evaluation
 						: null
 				,
 				(c1, c2) => c1.OrderDescending().ElementAt(0).Value.CompareTo(c2.OrderDescending().ElementAt(0).Value) is int bpRes && bpRes != 0 ? bpRes 
-				: c1.OrderDescending().ElementAt(2).Value.CompareTo(c2.OrderDescending().ElementAt(2).Value)
+				: c1.OrderDescending().ElementAt(2).Value.CompareTo(c2.OrderDescending().ElementAt(2).Value),
+				(c) => "Two Pair (" + c.OrderDescending().ElementAt(0).Value.PluralName() + " over " + c.OrderDescending().ElementAt(2).Value.PluralName() + ")"
 		);
 
 		public readonly static PokerHandType ThreeOfAKind = new(
@@ -97,7 +103,8 @@ namespace LightBlueFox.Games.Poker.Evaluation
 					.OrderByDescending(s => s.First().Value)
 					.FirstOrDefault()
 				,
-				(c1, c2) => c1.HighestValue().CompareTo(c2.HighestValue())
+				(c1, c2) => c1.HighestValue().CompareTo(c2.HighestValue()),
+				(c) => "Tripple " + c.First().Value.PluralName()
 		);
 
 		/// <summary>
@@ -107,7 +114,6 @@ namespace LightBlueFox.Games.Poker.Evaluation
 				"Straight",
 				(IEnumerable<Card> cards) =>
 				{
-					//throw new NotImplementedException("This is incorrectly implemented. GetLongestSequence returns incorrect values (single card instead of sequence!). Also edge case where cards are 6 5 4 3 2 1 A ");
 					IOrderedEnumerable<Card>? sequence = cards.GetLongestSequence(4).OrderDescending();
 					if (sequence == null) return null;
 
@@ -117,7 +123,8 @@ namespace LightBlueFox.Games.Poker.Evaluation
 					return sequence.Count() >= 5 ? sequence.Take(5) : null;
 				},
 				(c1, c2) => (c1.Select(c => c.Value).OrderDescending().SequenceEqual([CardValue.Ace, CardValue.Five, CardValue.Four, CardValue.Three, CardValue.Two]) ? CardValue.Five : c1.HighestValue())
-				.CompareTo(c2.Select(c => c.Value).OrderDescending().SequenceEqual([CardValue.Ace, CardValue.Five, CardValue.Four, CardValue.Three, CardValue.Two]) ? CardValue.Five : c2.HighestValue())
+				.CompareTo(c2.Select(c => c.Value).OrderDescending().SequenceEqual([CardValue.Ace, CardValue.Five, CardValue.Four, CardValue.Three, CardValue.Two]) ? CardValue.Five : c2.HighestValue()),
+				(c) => c.First().Value + "-high straight"
 		);
 
 		public readonly static PokerHandType Flush = new(
@@ -131,7 +138,8 @@ namespace LightBlueFox.Games.Poker.Evaluation
 			.FirstOrDefault()?
 			.Take(5)
 			,
-			(c1, c2) => c1.HighestValue().CompareTo(c2.HighestValue())
+			(c1, c2) => c1.HighestValue().CompareTo(c2.HighestValue()),
+			(c) => c.First().Value + "-high flush"
 		);
 
 		public readonly static PokerHandType FullHouse = new(
@@ -147,7 +155,8 @@ namespace LightBlueFox.Games.Poker.Evaluation
 				(c1, c2) => c1.GroupBy(c => c.Value).GroupBy(s => s.Count()).ToDictionary(g => g.Key) is var d1
 							&& c2.GroupBy(c => c.Value).GroupBy(s => s.Count()).ToDictionary(g => g.Key) is var d2
 							? d1[3].First().Key.CompareTo(d2[3].First().Key) is int compbig && compbig != 0 ? compbig : d1[2].First().Key.CompareTo(d2[2].First().Key)
-							: throw new InvalidOperationException("Failed to group when comparing full houses!")
+							: throw new InvalidOperationException("Failed to group when comparing full houses!"),
+				(c) => c.First().Value.PluralName() + " full of " + c.Last().Value.PluralName()
 		);
 
 		public readonly static PokerHandType FourOfAKind = new(
@@ -158,7 +167,8 @@ namespace LightBlueFox.Games.Poker.Evaluation
 					.OrderByDescending(s => s.First().Value)
 					.FirstOrDefault()
 				,
-				(c1, c2) => c1.HighestValue().CompareTo(c2.HighestValue())
+				(c1, c2) => c1.HighestValue().CompareTo(c2.HighestValue()),
+				(c) => "Four of a kind, " + c.First().Value.PluralName() 
 		);
 
 		public readonly static PokerHandType StraightFlush = new(
@@ -170,22 +180,13 @@ namespace LightBlueFox.Games.Poker.Evaluation
 						).Where(s => s is not null).OrderByDescending(s => s!.First().Value)
 					.FirstOrDefault()
 				,
-				comparator: (c1, c2) => Straight.Comparator(c1, c2)
+				comparator: (c1, c2) => Straight.Comparator(c1, c2),
+				(c) => c.AreOfValues([CardValue.Ace, CardValue.King, CardValue.Queen, CardValue.Jack, CardValue.Ten]) ? "Royal Flush" : c.First().Value + "-high straight flush"
 		);
 
-		public readonly static PokerHandType RoyalFlush = new(
-				"Royal Flush",
-				(IEnumerable<Card> cards) =>
-					cards.Count() >= 5
-					&& cards.Order().Take(5) is var relevantCards
-					&& relevantCards.SameSuit()
-					&& relevantCards.AreOfValues([CardValue.Ace, CardValue.King, CardValue.Queen, CardValue.Jack, CardValue.Ten]) ? relevantCards : null
-				,
-				(c1, c2) => 0
-		);
 		#endregion
 
-		public readonly static PokerHandType[] TypesDescending = [RoyalFlush, StraightFlush, FourOfAKind, FullHouse, Flush, Straight, ThreeOfAKind, TwoPair, Pair, HighCard];
+		public readonly static PokerHandType[] TypesDescending = [StraightFlush, FourOfAKind, FullHouse, Flush, Straight, ThreeOfAKind, TwoPair, Pair, HighCard];
 	}
 
 	
