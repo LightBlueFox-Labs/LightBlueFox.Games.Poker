@@ -77,6 +77,7 @@ namespace LightBlueFox.Games.Poker.Evaluation
             {
                 var relevantPlayers = players.Where((p) => pot.IsPlaying(p)).ToArray();
                 var evaluationsAndPlayers = relevantPlayers
+                    .Where(p => p.Status != PlayerStatus.Folded)
                     .Select(p => (Player: p, Evaluation: HandEvaluation.Evaluate(tableCards, p.Cards)))
                     .OrderByDescending(v => v.Evaluation);
 
@@ -95,16 +96,31 @@ namespace LightBlueFox.Games.Poker.Evaluation
                     ReceivedCoins = winnings
                 });
 
-                var looserInfos = evaluationsAndPlayers.Where(e => e.Evaluation.CompareTo(evaluationsAndPlayers.First().Evaluation) == -1).Select(e => new RoundEndPlayerInfo()
-                {
-                    Cards = e.Player.Status != PlayerStatus.Folded ? e.Player.Cards : null,
-                    CardsVisible = e.Player.Status != PlayerStatus.Folded,
-                    HasFolded = e.Player.Status == PlayerStatus.Folded,
-                    HasWon = false,
-                    Player = e.Player,
-                    Evaluation = e.Evaluation,
-                    ReceivedCoins = 0
-                });
+                var looserInfos = evaluationsAndPlayers
+                    .Where(e => e.Evaluation.CompareTo(evaluationsAndPlayers.First().Evaluation) == -1)
+                    .Select(e => new RoundEndPlayerInfo()
+                        {
+                            Cards = e.Player.Cards,
+                            CardsVisible = true,
+                            HasFolded = false,
+                            HasWon = false,
+                            Player = e.Player,
+                            Evaluation = e.Evaluation,
+                            ReceivedCoins = 0
+                        })
+                    .Concat(
+                        players.Where(p => p.Status == PlayerStatus.Folded)
+                        .Select(p => new RoundEndPlayerInfo()
+                        {
+						    Cards =  null,
+						    CardsVisible = false,
+						    HasFolded = true,
+						    HasWon = false,
+						    Player = p,
+						    Evaluation = null,
+						    ReceivedCoins = 0
+					    })
+                    );
 
                 results.Add(new()
                 {
