@@ -31,7 +31,7 @@
 
 	private void updateValid()
 	{
-		IsInputValid = Regex.IsMatch(id ?? "", "^[a-zA-Z0-9_.-]{1," + MAX_ID_LEN + "}") && Regex.IsMatch(name ?? "", "^[a-zA-Z0-9_. -]{1," + MAX_NAME_LEN + "}");
+		IsInputValid = Regex.IsMatch(id ?? "", "^[a-zA-Z0-9_.-]{1," + MAX_ID_LEN + "}$") && Regex.IsMatch(name ?? "", "^[a-zA-Z0-9_. -]{1," + MAX_NAME_LEN + "}$");
 	}
 
 	void joinGame()
